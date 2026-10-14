@@ -1,5 +1,7 @@
 # SolidCraft Apple feasibility prototype
 
+Maintained in [cwallyman/solidcraft, branch ipad-solidcraft](https://github.com/cwallyman/solidcraft/tree/ipad-solidcraft). The separate `cwallyman/ipad-solidcraft` repository is an archived backup.
+
 A signed iPad application that bundles a locally compiled SolidCraft WebAssembly CAD engine and customized egui interface in WKWebView. Modeling runs on the device; the app does not fetch the engine from a website. This is a feasibility prototype, not a native SwiftUI CAD editor.
 
 ## Run

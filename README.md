@@ -1,5 +1,13 @@
 # ipad-solidcraft
 
+The maintained iPad branch is [cwallyman/solidcraft → ipad-solidcraft](https://github.com/cwallyman/solidcraft/tree/ipad-solidcraft), a fork of the original project. The separate `cwallyman/ipad-solidcraft` repository is retained as an archived backup.
+
+Clone this branch to get the iPad app:
+
+```sh
+git clone --branch ipad-solidcraft https://github.com/cwallyman/solidcraft.git
+```
+
 An installed iPad prototype of [SolidCraft](https://github.com/bherbruck/solidcraft), using a SwiftUI/WKWebView shell and a bundled Rust/WebAssembly CAD engine. Modeling runs locally on the iPad.
 
 [View the iPad screenshot gallery](docs/screenshots/ipad/README.md).
@@ -36,9 +44,12 @@ See [the full implementation handoff](ApplePrototype/IPAD_APP_IMPLEMENTATION.md)
 
 ## Updating from the original developer
 
-The initial subtree is based on upstream commit `2bb24d1`. The `upstream` remote points to the original SolidCraft project; `origin` points to this repository. Work on an update branch from a clean checkout:
+The initial subtree is based on upstream commit `2bb24d1`. The `upstream` remote points to `bherbruck/solidcraft`; `origin` points to `cwallyman/solidcraft`. The maintained branch is `ipad-solidcraft` (also the fork's default branch). The optional `archive` remote identifies the archived standalone repository. Work on an update branch from a clean checkout:
 
 ```sh
+git fetch origin
+git switch ipad-solidcraft
+git pull --ff-only
 git switch -c update-solidcraft
 git subtree pull --prefix=upstream-solidcraft upstream main
 ```

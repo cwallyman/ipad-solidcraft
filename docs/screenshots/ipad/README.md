@@ -1,5 +1,7 @@
 # iPad interface screenshots
 
+Maintained in [cwallyman/solidcraft → ipad-solidcraft](https://github.com/cwallyman/solidcraft/tree/ipad-solidcraft). The duplicate standalone repository is archived.
+
 Captured October 14, 2026 on the physical iPad Air 11-inch (M3), using source checkpoint `f2eaccf0`. These are screenshots of the real SwiftUI/WKWebView app rendering its bundled CAD engine. They show only the built-in public sample and a small generated demonstration sketch. The PNGs retain the original screen captures; no interface elements were composited or redrawn.
 
 ## How these were captured
