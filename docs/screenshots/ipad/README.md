@@ -83,4 +83,3 @@ The view-settings popup opens beneath the upper-right controls.
 A finger double tap changes the sample to a face-normal view without changing the selection.
 
 ![Face-aligned view](2026-10-14/16-face-aligned.png)
-
