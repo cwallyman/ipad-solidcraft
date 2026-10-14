@@ -2,6 +2,10 @@
 
 An installed iPad prototype of [SolidCraft](https://github.com/bherbruck/solidcraft), using a SwiftUI/WKWebView shell and a bundled Rust/WebAssembly CAD engine. Modeling runs locally on the iPad.
 
+[View the iPad screenshot gallery](docs/screenshots/ipad/README.md).
+
+![SolidCraft running on iPad](docs/screenshots/ipad/2026-10-14/01-workspace.png)
+
 ## Project layout
 
 - `ApplePrototype/`: Xcode app, Pencil/finger/mouse input bridge, native Files support, build scripts and implementation notes.

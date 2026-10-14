@@ -118,3 +118,12 @@ Retained evidence is in `2026-10-14-interactions/`. See `../IPAD_APP_IMPLEMENTAT
 ## GitHub checkpoint checks — October 14, 2026
 
 Ran `cargo fmt --all`, then `cargo xtask ci` before committing the project as `cwallyman/ipad-solidcraft`. Formatting, assets (42 attributed files), license inventory and dependency layers passed. Strict Clippy stopped on existing `nonminimal_bool` findings in the sketch solver and coplanar kernel. Full CI therefore remains incomplete; this checkpoint does not claim a fresh device UI pass or App Store release. See the root README for subtree update instructions and excluded local artifacts.
+
+
+## Physical-iPad screenshots — October 14, 2026 afternoon
+
+`RuntimeTests/testFingerInterfaceBrowserResizeCollapseAndFaceAlignment` passed on the physical iPad with zero failures in approximately 18 seconds. Its native screenshot attachments show the browser resized, collapsed to the plain folder icon, view settings and face-normal alignment. This is a focused pass, not a complete device-suite pass; the earlier authentication-canceled attempt remains a separate failed attempt.
+
+Twelve reviewed PNGs are committed at `../../docs/screenshots/ipad/2026-10-14/`, with a gallery at `../../docs/screenshots/ipad/README.md`. Additional native device screenshots use a temporary DEBUG workflow fixture and injected input to show hover, dropdown open/close, face selection (two selected then one), and sketch rectangle preview/completion. They show the actual local engine renderer on the device but do not independently validate physical Pencil contact/hover hardware. Only the public sample and demonstration sketch are included.
+
+Unsuccessful sketch-selection capture attempts were excluded after visual review because the line tool remained active. Device lock prevented additional retakes; no screenshot claim is made for those attempts. Temporary fixture code was removed from the app source. The normal signed app build was restored after capture. Full repository CI remains subject to the previously documented Clippy limitations.

@@ -45,3 +45,6 @@ Convert Mesh now includes a **Faceted** method alongside the existing Prismatic 
 
 
 The complete implementation handoff, including October 14 hover, dropdown, drag drawing, Pencil/mouse selection and browser-icon changes, is in [IPAD_APP_IMPLEMENTATION.md](IPAD_APP_IMPLEMENTATION.md#20-pencil-mouse-toolbar-and-browser-update--october-14-2026). Revision-specific checks are recorded in [verification/RESULTS.md](verification/RESULTS.md).
+
+
+See the [iPad screenshot gallery](../docs/screenshots/ipad/README.md) for captured interface examples and their capture methods.

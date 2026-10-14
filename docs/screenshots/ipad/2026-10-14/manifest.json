@@ -1,0 +1,111 @@
+{
+  "date": "2026-10-14",
+  "source_commit": "f2eaccf0c60c0f4b69716ffda22dc36d873f169b",
+  "device_model": "iPad Air 11-inch (M3)",
+  "screenshots": [
+    {
+      "file": "01-workspace.png",
+      "title": "iPad workspace",
+      "method": "fixture",
+      "selection_count": 0,
+      "width": 2360,
+      "height": 1640,
+      "sha256": "84d57283a56851685965e7500aa1e5025b833811703b069ba82c974c8f16fcf5"
+    },
+    {
+      "file": "02-hover-tooltip.png",
+      "title": "Button-name hover label",
+      "method": "fixture",
+      "selection_count": 0,
+      "width": 2360,
+      "height": 1640,
+      "sha256": "37f87029ebb7131d8a8b152341e02157e8111da72b470a3a7fa64797ceb7cde9"
+    },
+    {
+      "file": "03-create-menu.png",
+      "title": "Create dropdown open",
+      "method": "fixture",
+      "selection_count": 0,
+      "width": 2360,
+      "height": 1640,
+      "sha256": "e55053e7c846d5f68bacbaa31eed0b5e6d4df4afe393dec463f84e6ec2476321"
+    },
+    {
+      "file": "04-dropdown-closed.png",
+      "title": "Second press closes the dropdown",
+      "method": "fixture",
+      "selection_count": 0,
+      "width": 2360,
+      "height": 1640,
+      "sha256": "db76545ecf75203593dd0456db42318ef3f7861ce4d2d7f6a9b172b9471edc53"
+    },
+    {
+      "file": "06-multiple-faces-selected.png",
+      "title": "Multiple faces selected",
+      "method": "fixture",
+      "selection_count": 2,
+      "width": 2360,
+      "height": 1640,
+      "sha256": "440bc94f8db0ee2c7f5b97f8e3c0087b549445514a799ec24d7997d422ecd282"
+    },
+    {
+      "file": "07-face-deselected.png",
+      "title": "One face toggled off",
+      "method": "fixture",
+      "selection_count": 1,
+      "width": 2360,
+      "height": 1640,
+      "sha256": "670d0723b9e916ad122c65e7ec125aba2dd158de68653900e05e0b0f24717b43"
+    },
+    {
+      "file": "08-sketch-drag-preview.png",
+      "title": "Sketch drag preview",
+      "method": "fixture",
+      "selection_count": 0,
+      "width": 2360,
+      "height": 1640,
+      "sha256": "3d6b794c39a8a73d5fb0d6bf731ed8b3ef541680199fd9935c65b752a0102bcd"
+    },
+    {
+      "file": "09-sketch-rectangle.png",
+      "title": "Rectangle completed on release",
+      "method": "fixture",
+      "selection_count": 0,
+      "width": 2360,
+      "height": 1640,
+      "sha256": "72fe5d3989bcf2b043c794502c6514ff9b05816024da301fa880ba1132a50e03"
+    },
+    {
+      "file": "13-browser-collapsed.png",
+      "title": "Browser collapsed",
+      "method": "XCTest",
+      "width": 1640,
+      "height": 2360,
+      "sha256": "9b93c7faddd387140020df145823f16cbef483731807c864245b9391cbc09ccf"
+    },
+    {
+      "file": "14-browser-resized.png",
+      "title": "Browser resized",
+      "method": "XCTest",
+      "width": 1640,
+      "height": 2360,
+      "sha256": "c2de23ce880f0e331216a7804f96481d551ebe6f07a14c17ecafa1b8e99365d1"
+    },
+    {
+      "file": "15-view-settings.png",
+      "title": "Upper-right view settings",
+      "method": "XCTest",
+      "width": 1640,
+      "height": 2360,
+      "sha256": "3fba2b1235d0254fef12b1143901eb8d2a5046e89b55b1083fbf1dd4fc406ed6"
+    },
+    {
+      "file": "16-face-aligned.png",
+      "title": "Face-aligned view",
+      "method": "XCTest",
+      "width": 1640,
+      "height": 2360,
+      "sha256": "a91f197f9b6b9934f3dab730ad2cf4bf0acb12216ce40874d45830647068ccad"
+    }
+  ]
+}
