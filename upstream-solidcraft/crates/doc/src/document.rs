@@ -963,10 +963,12 @@ pub enum FeatureKind {
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         components: Vec<solidcraft_kernel::StepNode>,
     },
-    /// Rebuild an upstream constant-section mesh with analytic planar/cylindrical faces.
+    /// Rebuild an upstream mesh as analytic or faceted CAD geometry.
     MeshConvert {
         body: String,
         tolerance: String,
+        #[serde(default)]
+        faceted: bool,
     },
     /// Mesh bodies imported from a 3MF or STL file, embedded in the design.
     MeshImport {

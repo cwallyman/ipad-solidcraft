@@ -501,21 +501,57 @@ pub fn browser(app: &mut SolveApp, ui: &mut egui::Ui) {
     DRAWN.with(|d| d.borrow_mut().clear());
     OCCURRENCES.with(|d| d.borrow_mut().clear());
     let mut acts = Actions::default();
-    egui::Panel::left("sc_browser")
-        .exact_size(250.0)
-        .resizable(false)
-        .frame(egui::Frame::NONE.fill(t.panel).inner_margin(egui::Margin::symmetric(6, 6)))
-        .show(ui, |ui| {
+    if app.ui.apple_touch && app.ui.browser_docked {
+        let panel = egui::Panel::left("sc_browser_dock")
+            .exact_size(52.0)
+            .resizable(false)
+            .frame(egui::Frame::NONE.fill(t.panel).inner_margin(6))
+            .show(ui, |ui| {
+                if browser_folder_button(ui, "Open browser").clicked() {
+                    app.ui.browser_docked = false;
+                }
+            });
+        crate::scenario::publish_rect("browser:panel", panel.response.rect);
+        occurrence_panel(app, ui);
+        capture_prompt(app, ui.ctx());
+        canvas_panel(app, ui.ctx());
+        return;
+    }
+    let panel = egui::Panel::left("sc_browser");
+    let panel = if app.ui.apple_touch {
+        let width = if app.ui.browser_width.is_finite() { app.ui.browser_width.clamp(160.0, 560.0) } else { 250.0 };
+        panel.default_size(width).size_range(160.0..=(ui.max_rect().width() - 280.0).clamp(160.0, 560.0)).resizable(true)
+    } else {
+        panel.exact_size(250.0).resizable(false)
+    };
+    let panel = panel.frame(egui::Frame::NONE.fill(t.panel).inner_margin(egui::Margin::symmetric(6, 6))).show(ui, |ui| {
+        ui.horizontal(|ui| {
             ui.label(RichText::new("BROWSER").size(11.0).strong().color(t.text_dim));
-            ui.add_space(4.0);
-            egui::ScrollArea::vertical()
-                .auto_shrink([false, false])
-                .scroll_source(egui::scroll_area::ScrollSource { scroll_bar: true, mouse_wheel: true, ..egui::scroll_area::ScrollSource::NONE })
-                .show(ui, |ui| {
-                    ui.spacing_mut().item_spacing.y = 0.0;
-                    component_rows(app, ui, 0, 0, &mut acts);
+            if app.ui.apple_touch {
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if browser_folder_button(ui, "Collapse browser").clicked() {
+                        app.ui.browser_docked = true;
+                    }
                 });
+            }
         });
+        ui.add_space(4.0);
+        egui::ScrollArea::vertical()
+            .auto_shrink([false, false])
+            .scroll_source(egui::scroll_area::ScrollSource { scroll_bar: true, mouse_wheel: true, ..egui::scroll_area::ScrollSource::NONE })
+            .show(ui, |ui| {
+                ui.spacing_mut().item_spacing.y = 0.0;
+                component_rows(app, ui, 0, 0, &mut acts);
+            });
+    });
+    crate::scenario::publish_rect("browser:panel", panel.response.rect);
+    if app.ui.apple_touch {
+        app.ui.browser_width = panel.response.rect.width().clamp(160.0, 560.0);
+        crate::scenario::publish_rect(
+            "browser:divider",
+            Rect::from_center_size(panel.response.rect.right_center(), vec2(20.0, panel.response.rect.height())),
+        );
+    }
     app.viewport.hover_bodies = acts.hover_bodies;
     if let Some(d) = acts.drop {
         apply_drop(app, d);
@@ -528,6 +564,17 @@ pub fn browser(app: &mut SolveApp, ui: &mut egui::Ui) {
     canvas_panel(app, ui.ctx());
     let repair_anchor = app.viewport.rect.map(|rect| rect.right_top() + vec2(-16.0, 16.0)).unwrap_or_else(|| ui.ctx().content_rect().right_top());
     crate::sketch_attachment_ui::panel(app, ui.ctx(), repair_anchor);
+}
+
+fn browser_folder_button(ui: &mut egui::Ui, tip: &str) -> egui::Response {
+    let t = Tokens::get();
+    let (rect, response) = ui.allocate_exact_size(vec2(40.0, 36.0), egui::Sense::click());
+    if response.hovered() {
+        ui.painter().rect_filled(rect, 4.0, t.hover);
+    }
+    crate::icons::paint(ui.painter(), rect.shrink(5.0), "folder", t.icon, t.icon_fill, t.accent);
+    crate::scenario::publish_rect("browser:toggle", rect);
+    response.on_hover_text(tip)
 }
 
 fn component_name(app: &SolveApp, id: u64) -> String {

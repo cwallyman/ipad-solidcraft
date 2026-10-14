@@ -55,6 +55,17 @@ impl Ent {
 
 /// Read the entities of an ASCII DXF file.
 pub fn read_dxf(text: &str) -> Result<Vec<Geom2>> {
+    Ok(read_dxf_impl(text, false)?.into_iter().flat_map(|(_, geometry)| geometry).collect())
+}
+
+/// Model-space geometry grouped by the original top-level DXF layer.
+/// Block geometry inherits its insertion layer; legacy polyline vertices stay
+/// with their parent. Geometry and expansion budgets apply across all layers.
+pub fn read_dxf_layers(text: &str) -> Result<Vec<(String, Vec<Geom2>)>> {
+    read_dxf_impl(text, true)
+}
+
+fn read_dxf_impl(text: &str, by_layer: bool) -> Result<Vec<(String, Vec<Geom2>)>> {
     if text.len() > MAX_DRAWING_BYTES {
         return Err(IoError::Invalid("the DXF file is too large".into()));
     }
@@ -89,9 +100,87 @@ pub fn read_dxf(text: &str) -> Result<Vec<Geom2>> {
             }
         }
     }
+    if !by_layer {
+        let mut geometry = Vec::new();
+        convert(&ents, k, &blocks, 0, &mut geometry, &mut 0)?;
+        return Ok(vec![("0".into(), geometry)]);
+    }
+    let mut groups: Vec<(String, Vec<Ent>)> = Vec::new();
+    let mut lookup = HashMap::new();
+    let mut polyline_layer: Option<String> = None;
+    for e in ents {
+        let layer = if matches!(e.kind.as_str(), "VERTEX" | "SEQEND") {
+            polyline_layer.clone().unwrap_or_else(|| e.text(8).unwrap_or("0").to_string())
+        } else {
+            e.text(8).unwrap_or("0").to_string()
+        };
+        if e.kind == "POLYLINE" {
+            polyline_layer = Some(layer.clone());
+        } else if e.kind != "VERTEX" {
+            polyline_layer = None;
+        }
+        let index = match lookup.get(&layer).copied() {
+            Some(index) => index,
+            None => {
+                let index = groups.len();
+                lookup.insert(layer.clone(), index);
+                groups.push((layer, Vec::new()));
+                index
+            }
+        };
+        if let Some((_, entities)) = groups.get_mut(index) {
+            entities.push(e);
+        }
+    }
     let mut out = Vec::new();
-    convert(&ents, k, &blocks, 0, &mut out, &mut 0)?;
+    let mut work = 0;
+    let mut count = 0usize;
+    for (name, entities) in groups {
+        let mut geometry = Vec::new();
+        convert(&entities, k, &blocks, 0, &mut geometry, &mut work)?;
+        count = count.saturating_add(geometry.len());
+        if count > MAX_ENTITIES {
+            return Err(IoError::Invalid("the drawing is too complex".into()));
+        }
+        if !geometry.is_empty() {
+            out.push((name, geometry));
+        }
+    }
     Ok(out)
+}
+
+/// Top-level model-space entity types the importer currently cannot read.
+pub fn dxf_unsupported_entities(text: &str) -> Result<Vec<(String, usize)>> {
+    if text.len() > MAX_DRAWING_BYTES {
+        return Err(IoError::Invalid("the DXF file is too large".into()));
+    }
+    let pairs = pairs(text);
+    let start = pairs.iter().position(|(c, v)| *c == 2 && v == "ENTITIES").ok_or_else(|| IoError::Invalid("no ENTITIES section".into()))?;
+    let mut counts = std::collections::BTreeMap::new();
+    for e in section(&pairs, start)? {
+        if e.get(67).is_some_and(|v| v != 0.0) {
+            continue;
+        }
+        if !matches!(
+            e.kind.as_str(),
+            "INSERT"
+                | "LINE"
+                | "POINT"
+                | "CIRCLE"
+                | "ARC"
+                | "LWPOLYLINE"
+                | "POLYLINE"
+                | "VERTEX"
+                | "SEQEND"
+                | "ELLIPSE"
+                | "SPLINE"
+                | "TEXT"
+                | "MTEXT"
+        ) {
+            *counts.entry(e.kind).or_insert(0) += 1;
+        }
+    }
+    Ok(counts.into_iter().collect())
 }
 
 /// The entities of the section whose name is at `start`.
@@ -454,6 +543,17 @@ pub fn write_dxf(geom: &[Geom2]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn layer_groups_keep_legacy_polyline_vertices_together() {
+        let text = "0\nSECTION\n2\nENTITIES\n0\nPOLYLINE\n8\nOutline\n70\n1\n0\nVERTEX\n10\n0\n20\n0\n0\nVERTEX\n10\n10\n20\n0\n0\nVERTEX\n10\n10\n20\n10\n0\nSEQEND\n0\nLINE\n8\nOther\n10\n0\n20\n1\n11\n10\n21\n1\n0\nENDSEC\n0\nEOF\n";
+        let groups = read_dxf_layers(text).unwrap();
+        assert_eq!(groups.len(), 2);
+        assert_eq!(groups[0].0, "Outline");
+        assert_eq!(groups[0].1.len(), 3);
+        assert_eq!(groups[1].1.len(), 1);
+        assert_eq!(read_dxf(text).unwrap().len(), 4);
+    }
 
     #[test]
     fn round_trip_and_polyline_bulges() {

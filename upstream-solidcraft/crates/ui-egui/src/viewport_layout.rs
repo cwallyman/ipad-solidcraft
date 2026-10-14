@@ -39,6 +39,27 @@ fn free_rect(view: Rect, obstacles: &[Rect]) -> Rect {
 }
 
 impl Layout {
+    pub fn new_touch(viewport: Rect, docks: &[Rect], scale: f32, style: crate::prefs::NavigatorStyle) -> Self {
+        let mut layout = Self::new(viewport, docks, scale, style);
+        let columns = ((viewport.width() - 12.0) / 44.0).floor().clamp(1.0, 6.0);
+        let height = (6.0 / columns).ceil() * 44.0 + 4.0;
+        let width = columns * 44.0 + 12.0;
+        layout.navigation = Rect::from_min_size(pos2(viewport.right() - width, viewport.top() + 6.0), vec2(width, height));
+        let size = super::viewport::axis_view_size(style);
+        layout.axis_view = if viewport.width() >= size && viewport.height() >= size + height + 16.0 {
+            Rect::from_min_size(pos2(viewport.right() - size, viewport.top() + height + 12.0), vec2(size, size))
+        } else {
+            Rect::NOTHING
+        };
+        let mut obstacles: Vec<_> = docks.iter().take(6).copied().filter(|r| r.is_finite()).map(|r| r.expand(4.0)).collect();
+        obstacles.push(layout.navigation);
+        if layout.axis_view.is_positive() {
+            obstacles.push(layout.axis_view);
+        }
+        let scale = if scale.is_finite() && scale > 0.0 { scale } else { 1.0 };
+        layout.drawable = free_rect(viewport, &obstacles).shrink(16.0 / scale);
+        layout
+    }
     pub fn new(viewport: Rect, docks: &[Rect], scale: f32, style: crate::prefs::NavigatorStyle) -> Self {
         let scale = if scale.is_finite() && scale > 0.0 { scale } else { 1.0 };
         let mut obstacles: Vec<_> = docks.iter().take(6).copied().filter(|r| r.is_finite()).map(|r| r.expand(4.0)).collect();

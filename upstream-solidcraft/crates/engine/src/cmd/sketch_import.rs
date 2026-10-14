@@ -96,10 +96,8 @@ fn add_geometry(sk: &mut Sketch, geom: &[Geom2], f: &dyn Fn(Vec2) -> Vec2, k: f6
                 None
             }
         };
-        if let Some(kind) = made
-            && let Ok(c) = sk.add_curve(kind, None)
-        {
-            curves.push(c);
+        if let Some(kind) = made {
+            curves.push(sk.add_curve(kind, None)?);
         }
     }
     Ok((curves, texts))
@@ -108,6 +106,11 @@ fn add_geometry(sk: &mut Sketch, geom: &[Geom2], f: &dyn Fn(Vec2) -> Vec2, k: f6
 fn insert(s: &mut Session, p: &Value, cmd: &str, svg: bool) -> Result<Value> {
     let text = source_text(p, cmd)?;
     let geom = if svg { solidcraft_io::read_svg(&text) } else { solidcraft_io::read_dxf(&text) }.map_err(|e| bad(cmd, e.to_string()))?;
+    let point_budget = geom.iter().fold(0usize, |n, g| n.saturating_add(geometry_points(g)));
+    let existing = s.active_sketch.and_then(|id| s.doc.sketch(id).ok()).map(|sk| sk.points.len()).unwrap_or(0);
+    if !svg && point_budget.saturating_add(existing) > solidcraft_sketch::MAX_POINTS {
+        return insert_layered(s, p, cmd, &text);
+    }
     if geom.is_empty() {
         return Err(bad(cmd, "the drawing has no geometry SolidCraft reads"));
     }
@@ -144,6 +147,107 @@ fn insert(s: &mut Session, p: &Value, cmd: &str, svg: bool) -> Result<Value> {
         }
     }
     Ok(json!({"sketch": id, "created_sketch": created, "curves": curves.len(), "texts": n_text, "info": info}))
+}
+
+/// Conservative upper bound on new points, before coincident ends are merged.
+fn geometry_points(g: &Geom2) -> usize {
+    match g {
+        Geom2::Point(_) | Geom2::Circle(..) => 1,
+        Geom2::Line(..) | Geom2::Ellipse { .. } => 2,
+        Geom2::Arc { .. } | Geom2::Conic { .. } => 3,
+        Geom2::Spline { pts, .. } => pts.len(),
+        Geom2::Text { .. } => solidcraft_sketch::MAX_POINTS,
+    }
+}
+
+/// Large drawings remain editable and keep their coordinates and units. Each
+/// layer gets separate sketches, with bounded parts when necessary. No entities
+/// are dropped to fit a sketch. The outer Session command remains one undo step.
+fn insert_layered(s: &mut Session, p: &Value, cmd: &str, text: &str) -> Result<Value> {
+    const POINT_BUDGET: usize = 7_999; // Leave room for the sketch origin.
+    const MAX_PARTS: usize = 256;
+    let layers = solidcraft_io::read_dxf_layers(text).map_err(|e| bad(cmd, e.to_string()))?;
+    let layer_count = layers.len();
+    let mut parts: Vec<(String, Vec<Geom2>)> = Vec::new();
+    for (layer, geometry) in layers {
+        let mut current = Vec::new();
+        let mut points = 0usize;
+        let mut part = 1usize;
+        for g in geometry {
+            let budget = geometry_points(&g);
+            if !current.is_empty() && points.saturating_add(budget) > POINT_BUDGET {
+                parts.push((format!("DXF {layer} ({part})"), std::mem::take(&mut current)));
+                part += 1;
+                points = 0;
+            }
+            points = points.saturating_add(budget);
+            current.push(g);
+            if parts.len() >= MAX_PARTS {
+                return Err(bad(cmd, "drawing needs more than 256 sketch parts; import a smaller drawing"));
+            }
+        }
+        if !current.is_empty() {
+            parts.push((format!("DXF {layer} ({part})"), current));
+        }
+        if parts.len() > MAX_PARTS {
+            return Err(bad(cmd, "drawing needs more than 256 sketch parts; import a smaller drawing"));
+        }
+    }
+    let k = num(p, "scale").filter(|k| *k > 1e-9 && *k < 1e6).unwrap_or(1.0);
+    let off = p.get("at").and_then(vec2).unwrap_or(Vec2::ZERO);
+    let tol = num(p, "tolerance").filter(|t| t.is_finite() && *t > 0.0).unwrap_or(1e-4).clamp(1e-9, 10.0);
+    let prior = s.active_sketch;
+    let plane = prior.and_then(|id| s.doc.feature(id)).and_then(|f| match &f.kind {
+        solidcraft_doc::FeatureKind::Sketch { plane, .. } => Some(plane.clone()),
+        _ => None,
+    });
+    let create = super::find_command("sketch.create").ok_or_else(|| bad(cmd, "sketch.create"))?;
+    let finish = super::find_command("sketch.finish").ok_or_else(|| bad(cmd, "sketch.finish"))?;
+    if prior.is_some() {
+        (finish.run)(s, &json!({}))?;
+    }
+    let mut sketches = Vec::new();
+    let mut curves = 0usize;
+    let mut entities = 0usize;
+    for (name, geometry) in parts {
+        let r = (create.run)(s, &json!({"plane":p.get("plane").cloned().unwrap_or(json!("XY")),"name":name,"project_edges":false}))?;
+        let id = r["sketch"].as_u64().ok_or_else(|| bad(cmd, "sketch creation returned no id"))?;
+        if let Some(plane) = &plane
+            && let Some(f) = s.doc_mut().feature_mut(id)
+            && let solidcraft_doc::FeatureKind::Sketch { plane: target, .. } = &mut f.kind
+        {
+            *target = plane.clone();
+        }
+        let ((added, texts), _) = edit(s, &json!({}), cmd, false, |sk, _| add_geometry(sk, &geometry, &|q| q * k + off, k, tol))?;
+        curves += added.len();
+        entities += geometry.len();
+        for t in texts {
+            if let Geom2::Text { text, at, height, angle } = t {
+                let mut doc = (*s.doc).clone();
+                let mut sk = doc.sketch(id)?.clone();
+                super::sketch_project::add_link(s, &doc, id, &mut sk, LinkKind::Text, LinkSource::Text { text, at, height, angle, font: None })?;
+                *doc.sketch_mut(id)? = sk;
+                *s.doc_mut() = doc;
+            }
+        }
+        (finish.run)(s, &json!({}))?;
+        sketches.push(id);
+    }
+    // Leave every imported part visible and restore the user's active sketch.
+    s.active_sketch = prior;
+    s.visibility.shown_sketches.extend(sketches.iter().copied());
+    let mut warnings = vec![format!(
+        "Large DXF imported as {} editable sketch parts from {layer_count} layers. Parts retain drawing coordinates; profiles crossing parts must be joined before extrusion.",
+        sketches.len()
+    )];
+    let unsupported = solidcraft_io::dxf_unsupported_entities(text).map_err(|e| bad(cmd, e.to_string()))?;
+    if !unsupported.is_empty() {
+        warnings.push(format!(
+            "Not imported (unsupported): {}.",
+            unsupported.iter().map(|(kind, count)| format!("{count} {kind}")).collect::<Vec<_>>().join(", ")
+        ));
+    }
+    Ok(json!({"sketches":sketches,"layers":layer_count,"curves":curves,"entities":entities,"warnings":warnings}))
 }
 
 fn insert_dxf(s: &mut Session, p: &Value) -> Result<Value> {
@@ -194,6 +298,41 @@ mod tests {
     use serde_json::json;
 
     use crate::Session;
+
+    #[test]
+    fn large_dxf_keeps_all_geometry_in_bounded_layer_parts() {
+        let mut dxf = "0\nSECTION\n2\nENTITIES\n".to_string();
+        for i in 0..11_000 {
+            dxf.push_str(&format!("0\nLINE\n8\nLayer{}\n10\n{}\n20\n0\n11\n{}\n21\n1\n", i % 2, i * 2, i * 2 + 1));
+        }
+        dxf.push_str("0\nENDSEC\n0\nEOF\n");
+        let mut s = Session::default();
+        let prior = s.execute("sketch.create", &json!({"plane":"XY","offset":12})).unwrap()["sketch"].as_u64().unwrap();
+        let result = s.execute("sketch.insert_dxf", &json!({"text":dxf})).unwrap();
+        assert_eq!(s.active_sketch, Some(prior));
+        assert_eq!(result["curves"], 11_000);
+        assert_eq!(result["layers"], 2);
+        let ids = result["sketches"].as_array().unwrap();
+        assert_eq!(ids.len(), 4);
+        let mut points = 0;
+        for id in ids {
+            let id = id.as_u64().unwrap();
+            let sk = s.doc.sketch(id).unwrap();
+            assert!(sk.points.len() <= 8_000);
+            points += sk.points.len();
+            assert!(s.visibility.shown_sketches.contains(&id));
+            let original = s.doc.feature(prior).unwrap();
+            let part = s.doc.feature(id).unwrap();
+            if let (solidcraft_doc::FeatureKind::Sketch { plane: a, .. }, solidcraft_doc::FeatureKind::Sketch { plane: b, .. }) =
+                (&original.kind, &part.kind)
+            {
+                assert_eq!(a, b);
+            }
+        }
+        assert_eq!(points, 22_004); // Four sketch origins plus every imported point.
+        s.execute("edit.undo", &json!({})).unwrap();
+        assert_eq!(s.doc.features.len(), 1);
+    }
 
     #[test]
     fn dxf_and_svg_round_trip_into_sketches() {

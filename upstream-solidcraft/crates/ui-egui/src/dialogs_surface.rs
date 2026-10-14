@@ -16,7 +16,7 @@ use crate::selection::{BODIES, EDGES, FACES, PLANES, PROFILES, SelInput};
 pub enum Surf {
     Patch,
     Stitch { tolerance: String },
-    ConvertMesh { tolerance: String },
+    ConvertMesh { tolerance: String, method: usize },
     Thicken { thickness: String, symmetric: bool, operation: usize },
     Extend { distance: String },
     Trim,
@@ -67,7 +67,7 @@ pub fn start(_app: &SolveApp, id: &str) -> Option<(Kind, Vec<SelInput>)> {
     let k = match id {
         "surface.patch" => Surf::Patch,
         "surface.stitch" => Surf::Stitch { tolerance: String::new() },
-        "mesh.convert" => Surf::ConvertMesh { tolerance: "0.05 mm".into() },
+        "mesh.convert" => Surf::ConvertMesh { tolerance: "0.05 mm".into(), method: 0 },
         "surface.thicken" => Surf::Thicken { thickness: "2 mm".into(), symmetric: false, operation: 0 },
         "surface.extend" => Surf::Extend { distance: "10 mm".into() },
         "surface.trim" => Surf::Trim,
@@ -81,8 +81,18 @@ pub fn start(_app: &SolveApp, id: &str) -> Option<(Kind, Vec<SelInput>)> {
 /// The rows after the inputs; true when Enter was pressed in a field.
 pub fn rows(ui: &mut egui::Ui, k: &mut Surf) -> bool {
     let mut enter = false;
+    if let Surf::ConvertMesh { method, .. } = k {
+        row_label(ui, "Method");
+        combo(ui, "mesh_conversion_method", &["Prismatic", "Faceted"], method);
+        ui.end_row();
+        if *method == 1 {
+            ui.label("");
+            ui.label("Separate bodies; parts are not fused.");
+            ui.end_row();
+        }
+    }
     match k {
-        Surf::Stitch { tolerance } | Surf::ConvertMesh { tolerance } => {
+        Surf::Stitch { tolerance } | Surf::ConvertMesh { tolerance, .. } => {
             row_label(ui, "Tolerance");
             let r = ui.add(egui::TextEdit::singleline(tolerance).hint_text("tight"));
             crate::params_dialog::complete(ui, &r, tolerance);
@@ -163,10 +173,10 @@ pub fn commands(app: &SolveApp, k: &Surf, inputs: &[SelInput], extra: &Map<Strin
             }
             ("surface.stitch", p)
         }
-        Surf::ConvertMesh { tolerance } => {
+        Surf::ConvertMesh { tolerance, method } => {
             need(0, "a closed mesh body")?;
             let body = bodies(inputs, 0).into_iter().next().ok_or("select a mesh body")?;
-            ("mesh.convert", json!({"body":body,"tolerance":tolerance}))
+            ("mesh.convert", json!({"body":body,"tolerance":tolerance,"method":if *method == 1 {"faceted"} else {"prismatic"}}))
         }
         Surf::Thicken { thickness, symmetric, operation } => {
             need(0, "the surfaces to thicken")?;
@@ -244,8 +254,8 @@ pub fn for_feature(app: &SolveApp, kind: &FeatureKind) -> Option<(Kind, Vec<SelI
             Surf::Stitch { tolerance: if tolerance.trim() == "0" { String::new() } else { tolerance.clone() } },
             vec![bodies.iter().map(|n| Sel::Body { name: n.clone() }).collect()],
         ),
-        FeatureKind::MeshConvert { body, tolerance } => {
-            (Surf::ConvertMesh { tolerance: tolerance.clone() }, vec![vec![Sel::Body { name: body.clone() }]])
+        FeatureKind::MeshConvert { body, tolerance, faceted } => {
+            (Surf::ConvertMesh { tolerance: tolerance.clone(), method: usize::from(*faceted) }, vec![vec![Sel::Body { name: body.clone() }]])
         }
         FeatureKind::Thicken { bodies, thickness, symmetric, operation, .. } => (
             Surf::Thicken { thickness: thickness.clone(), symmetric: *symmetric, operation: op_index(operation) },

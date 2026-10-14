@@ -1,0 +1,475 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		114FF4F3CEAA0DFB1A934C0B /* SolidCraftTestApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33E04B5155B59B17796388FC /* SolidCraftTestApp.swift */; };
+		490F6DF581CD92D13BFBF890 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 31B3554CD46870D02E2874BF /* Assets.xcassets */; };
+		5EA56C8A39F7DE3625B67945 /* Web in Resources */ = {isa = PBXBuildFile; fileRef = CCF4CCF0216BEA77F4EEC65A /* Web */; };
+		796DCFF10806486240B7E192 /* input.js in Resources */ = {isa = PBXBuildFile; fileRef = 57DF1F1DF59A1FA77DBDF371 /* input.js */; };
+		977B2267334578EA504D8863 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B254DB6A11ED44C3ED476B68 /* Foundation.framework */; };
+		A64D0BA73E8366CAE62417F1 /* RuntimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6935AD452CF2D40EC605CDB5 /* RuntimeTests.swift */; };
+		E99735FC0A3EA1D4E99A14D1 /* bridge.js in Resources */ = {isa = PBXBuildFile; fileRef = BA1BADFFE320CB64B29E2CDD /* bridge.js */; };
+		EE3A9CC7872042F45F59AD2B /* LocalWebServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CB1813EDA571148C6E3DD07 /* LocalWebServer.swift */; };
+		F3DBDF36F043955CC4CABB20 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B254DB6A11ED44C3ED476B68 /* Foundation.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		34E77FB31AAFDC3B4F75BD06 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 12F7669DABEEBC0CF1F44B27 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 637BE2EC8A92BDB3E2878B16;
+			remoteInfo = SolidCraftTest;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		31B3554CD46870D02E2874BF /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		31DD8330276BEE09E6650C81 /* SolidCraftTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SolidCraftTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		33E04B5155B59B17796388FC /* SolidCraftTestApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SolidCraftTestApp.swift; sourceTree = "<group>"; };
+		57DF1F1DF59A1FA77DBDF371 /* input.js */ = {isa = PBXFileReference; includeInIndex = 1; path = input.js; sourceTree = "<group>"; };
+		658690B98BF8BD44B164B0F3 /* SolidCraftTestUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SolidCraftTestUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		6935AD452CF2D40EC605CDB5 /* RuntimeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RuntimeTests.swift; sourceTree = "<group>"; };
+		6CB1813EDA571148C6E3DD07 /* LocalWebServer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LocalWebServer.swift; sourceTree = "<group>"; };
+		B254DB6A11ED44C3ED476B68 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		BA1BADFFE320CB64B29E2CDD /* bridge.js */ = {isa = PBXFileReference; includeInIndex = 1; path = bridge.js; sourceTree = "<group>"; };
+		CCF4CCF0216BEA77F4EEC65A /* Web */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = Web; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		425F6AB2B6C99830D36ADD0D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				977B2267334578EA504D8863 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F5DED4CFA9B5AD8358B5682E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F3DBDF36F043955CC4CABB20 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1970DD7A2C2E263AF98F4B13 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				31DD8330276BEE09E6650C81 /* SolidCraftTest.app */,
+				658690B98BF8BD44B164B0F3 /* SolidCraftTestUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		25E03F0D52AF57DBEDEADE11 /* SolidCraftTest */ = {
+			isa = PBXGroup;
+			children = (
+				6CB1813EDA571148C6E3DD07 /* LocalWebServer.swift */,
+				33E04B5155B59B17796388FC /* SolidCraftTestApp.swift */,
+				57DF1F1DF59A1FA77DBDF371 /* input.js */,
+				BA1BADFFE320CB64B29E2CDD /* bridge.js */,
+				31B3554CD46870D02E2874BF /* Assets.xcassets */,
+				CCF4CCF0216BEA77F4EEC65A /* Web */,
+			);
+			name = SolidCraftTest;
+			path = SolidCraftTest;
+			sourceTree = "<group>";
+		};
+		3439C86292B7834B6BEE7F81 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				B254DB6A11ED44C3ED476B68 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		546D43A08F104C8C22888059 = {
+			isa = PBXGroup;
+			children = (
+				1970DD7A2C2E263AF98F4B13 /* Products */,
+				6734D96CA257B1F350C7A740 /* Frameworks */,
+				25E03F0D52AF57DBEDEADE11 /* SolidCraftTest */,
+				C393C09D6DD5D0BC5D4391BD /* SolidCraftTestUITests */,
+			);
+			sourceTree = "<group>";
+		};
+		6734D96CA257B1F350C7A740 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				3439C86292B7834B6BEE7F81 /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		C393C09D6DD5D0BC5D4391BD /* SolidCraftTestUITests */ = {
+			isa = PBXGroup;
+			children = (
+				6935AD452CF2D40EC605CDB5 /* RuntimeTests.swift */,
+			);
+			name = SolidCraftTestUITests;
+			path = SolidCraftTestUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		637BE2EC8A92BDB3E2878B16 /* SolidCraftTest */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 864AEFD6CBD554E9B00884DE /* Build configuration list for PBXNativeTarget "SolidCraftTest" */;
+			buildPhases = (
+				4784F31C03B9CACE5B198010 /* Sources */,
+				F5DED4CFA9B5AD8358B5682E /* Frameworks */,
+				8852D6EF63CA30CEC42906C9 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SolidCraftTest;
+			productName = SolidCraftTest;
+			productReference = 31DD8330276BEE09E6650C81 /* SolidCraftTest.app */;
+			productType = "com.apple.product-type.application";
+		};
+		8D5D68A45B0C7E56989B7E7C /* SolidCraftTestUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 66292AC2827B0EC141C5FE13 /* Build configuration list for PBXNativeTarget "SolidCraftTestUITests" */;
+			buildPhases = (
+				7D5564E3E7BD8566FE8421D5 /* Sources */,
+				425F6AB2B6C99830D36ADD0D /* Frameworks */,
+				61226E72A3B4C137C4B2BF23 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				13DA9C16277364BAA26B5A7E /* PBXTargetDependency */,
+			);
+			name = SolidCraftTestUITests;
+			productName = SolidCraftTestUITests;
+			productReference = 658690B98BF8BD44B164B0F3 /* SolidCraftTestUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		12F7669DABEEBC0CF1F44B27 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+			};
+			buildConfigurationList = D80A3174332B0B5117A01559 /* Build configuration list for PBXProject "SolidCraftTest" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 546D43A08F104C8C22888059;
+			minimizedProjectReferenceProxies = 0;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 1970DD7A2C2E263AF98F4B13 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				637BE2EC8A92BDB3E2878B16 /* SolidCraftTest */,
+				8D5D68A45B0C7E56989B7E7C /* SolidCraftTestUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		61226E72A3B4C137C4B2BF23 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8852D6EF63CA30CEC42906C9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				796DCFF10806486240B7E192 /* input.js in Resources */,
+				E99735FC0A3EA1D4E99A14D1 /* bridge.js in Resources */,
+				490F6DF581CD92D13BFBF890 /* Assets.xcassets in Resources */,
+				5EA56C8A39F7DE3625B67945 /* Web in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4784F31C03B9CACE5B198010 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EE3A9CC7872042F45F59AD2B /* LocalWebServer.swift in Sources */,
+				114FF4F3CEAA0DFB1A934C0B /* SolidCraftTestApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7D5564E3E7BD8566FE8421D5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A64D0BA73E8366CAE62417F1 /* RuntimeTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		13DA9C16277364BAA26B5A7E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = SolidCraftTest;
+			target = 637BE2EC8A92BDB3E2878B16 /* SolidCraftTest */;
+			targetProxy = 34E77FB31AAFDC3B4F75BD06 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		15F9040537286B40C056346E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		5EED397C7F43812CC0DA0869 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = D58RZM4K8N;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cwallyman.SolidCraftTestUITests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 2;
+				TEST_TARGET_NAME = SolidCraftTest;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		8D8255ADE974944C3740EE3C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		9DB106A8353773542EC1985E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = D58RZM4K8N;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cwallyman.SolidCraftTestUITests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 2;
+				TEST_TARGET_NAME = SolidCraftTest;
+			};
+			name = Debug;
+		};
+		BAF3DA6E56616E3ACB74EB4A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = YES;
+				DEVELOPMENT_TEAM = D58RZM4K8N;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SolidCraftTest/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "SolidCraft Test";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cwallyman.SolidCraftTest;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		BC18669F231BC83BF83CDF7A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = YES;
+				DEVELOPMENT_TEAM = D58RZM4K8N;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SolidCraftTest/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "SolidCraft Test";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cwallyman.SolidCraftTest;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 2;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		66292AC2827B0EC141C5FE13 /* Build configuration list for PBXNativeTarget "SolidCraftTestUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5EED397C7F43812CC0DA0869 /* Release */,
+				9DB106A8353773542EC1985E /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		864AEFD6CBD554E9B00884DE /* Build configuration list for PBXNativeTarget "SolidCraftTest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BC18669F231BC83BF83CDF7A /* Release */,
+				BAF3DA6E56616E3ACB74EB4A /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D80A3174332B0B5117A01559 /* Build configuration list for PBXProject "SolidCraftTest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8D8255ADE974944C3740EE3C /* Debug */,
+				15F9040537286B40C056346E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 12F7669DABEEBC0CF1F44B27 /* Project object */;
+}

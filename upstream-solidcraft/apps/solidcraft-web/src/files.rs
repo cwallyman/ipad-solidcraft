@@ -150,11 +150,6 @@ async fn root() -> Result<FileSystemDirectoryHandle, String> {
     dir.dyn_into::<FileSystemDirectoryHandle>().map_err(|_| "this browser has no private file storage (OPFS)".to_string())
 }
 
-async fn read_handle(h: &FileSystemFileHandle) -> Result<Vec<u8>, String> {
-    let file: web_sys::File = JsFuture::from(h.get_file()).await.map_err(err)?.dyn_into().map_err(|_| "not a file".to_string())?;
-    blob_bytes(&file).await
-}
-
 async fn blob_bytes(b: &web_sys::Blob) -> Result<Vec<u8>, String> {
     let buf = JsFuture::from(b.array_buffer()).await.map_err(err)?;
     Ok(Uint8Array::new(&buf).to_vec())
@@ -436,9 +431,20 @@ pub fn pick_from_disk(files: &Rc<Files>, intent: Intent) {
                     let p: js_sys::Promise = promise.map_err(err)?.dyn_into().map_err(|_| "no promise".to_string())?;
                     let handles: Array = JsFuture::from(p).await.map_err(err)?.dyn_into().map_err(|_| "no files".to_string())?;
                     for h in handles.iter() {
-                        let h: FileSystemFileHandle = h.dyn_into().map_err(|_| "not a file".to_string())?;
-                        let bytes = read_handle(&h).await?;
-                        files.arrive(h.name(), bytes, intent);
+                        // Native Apple hosts provide a structural getFile handle rather
+                        // than a browser FileSystemFileHandle instance.
+                        let name = Reflect::get(&h, &"name".into()).map_err(err)?.as_string().ok_or("file has no name")?;
+                        if name.is_empty() || name.len() > 200 || name.contains('/') || name.contains('\\') {
+                            return Err("invalid file name".into());
+                        }
+                        let get: Function = Reflect::get(&h, &"getFile".into()).map_err(err)?.dyn_into().map_err(|_| "file has no reader")?;
+                        let promise: js_sys::Promise = get.call0(&h).map_err(err)?.dyn_into().map_err(|_| "file reader returned no promise")?;
+                        let file: web_sys::File = JsFuture::from(promise).await.map_err(err)?.dyn_into().map_err(|_| "not a file".to_string())?;
+                        if file.size() > 128.0 * 1024.0 * 1024.0 {
+                            return Err("file exceeds the 128 MB import limit".into());
+                        }
+                        let bytes = blob_bytes(&file).await?;
+                        files.arrive(name, bytes, intent);
                     }
                     Ok::<(), String>(())
                 };
@@ -458,7 +464,7 @@ fn input_picker(files: &Rc<Files>, intent: Intent) {
     let Some(doc) = web_sys::window().and_then(|w| w.document()) else { return };
     let Ok(input) = doc.create_element("input").map(|e| e.unchecked_into::<web_sys::HtmlInputElement>()) else { return };
     input.set_type("file");
-    input.set_accept(".solidcraft,.solvecraft,.json,.step,.stp,.3mf,.stl");
+    input.set_accept(".solidcraft,.solvecraft,.json,.step,.stp,.3mf,.stl,.dxf,.svg");
     // Attached (hidden) while it is open: some browsers ignore a click on a detached input.
     let _ = input.set_attribute("style", "display:none");
     if let Some(body) = doc.body() {

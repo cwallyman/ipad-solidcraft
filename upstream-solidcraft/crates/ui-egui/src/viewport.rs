@@ -62,6 +62,8 @@ pub struct ViewportState {
     /// The preset's navigation for the left-button drag under way (Alias: Shift+Alt), taken
     /// when the button went down, so the drag neither selects nor moves sketch geometry.
     pub primary_nav: Option<NavMode>,
+    /// Drawing gesture: the tool that accepted the press origin as its first point.
+    sketch_draw_drag: Option<&'static str>,
     /// What a click would pick now (after the active command's filter).
     pub hover: Option<Hit>,
     pub mouse: Option<Pos2>,
@@ -1821,7 +1823,9 @@ pub fn show(app: &mut SolveApp, ui: &mut egui::Ui) {
     // hit test also counts the model as under the pointer a few points past its own edge and
     // inside a window's or a list's edge (#678), so the pointer must be in the viewport too,
     // with no window or menu above it.
-    let inside = resp.contains_pointer() && ui.rect_contains_pointer(rect) && hover.is_some_and(|p| !axes.contains(p));
+    let inside = resp.contains_pointer()
+        && ui.rect_contains_pointer(rect)
+        && hover.is_some_and(|p| !(axes.contains(p) || app.ui.apple_touch && app.viewport.layout.as_ref().is_some_and(|l| l.navigation.contains(p))));
     app.viewport.mouse = hover.filter(|_| inside);
     // Ctrl or Alt held: drawing and dragging don't snap.
     crate::drag_snap::set_suppressed(mods.ctrl || mods.alt || mods.command);
@@ -2087,12 +2091,44 @@ pub fn show(app: &mut SolveApp, ui: &mut egui::Ui) {
     }
 
     // ---- interaction ----
-    let add = mods.shift || mods.command || mods.ctrl;
+    // A drawing drag places the first point at the press origin, previews while held,
+    // and places the next point on release. Ordinary point-by-point clicks still work.
+    let draw_tool = app
+        .tool
+        .as_ref()
+        .filter(|tool| match tool.kind {
+            crate::tools::Kind::Draw(n) => n != 1,
+            crate::tools::Kind::Ext => crate::sketch_tools::supports_draw_drag(tool.cmd),
+            _ => false,
+        })
+        .map(|tool| tool.cmd);
+    if draw_tool != app.viewport.sketch_draw_drag || (!primary_down && !primary_released) {
+        app.viewport.sketch_draw_drag = None;
+    }
+    if resp.drag_started_by(egui::PointerButton::Primary)
+        && primary_nav.is_none()
+        && mode.is_none()
+        && let Some(command) = draw_tool
+        && let Some(origin) = ui.input(|i| i.pointer.press_origin()).filter(|p| rect.contains(*p) && !axes.contains(*p))
+    {
+        if app.tool.as_ref().is_some_and(|tool| tool.pts.is_empty()) {
+            crate::tools::on_click(app, &proj, origin);
+        }
+        if app.tool.as_ref().is_some_and(|tool| tool.cmd == command && !tool.pts.is_empty()) {
+            app.viewport.sketch_draw_drag = Some(command);
+        }
+    }
+    let drawing_release = primary_released && app.viewport.sketch_draw_drag.take().is_some();
+    if drawing_release && let Some(p) = hover.filter(|_| inside) {
+        crate::tools::on_click(app, &proj, p);
+    }
+    let pencil = crate::apple_touch::pencil_input();
+    let add = mods.shift || mods.command || mods.ctrl || pencil;
     if let Some(p) = hover.filter(|_| inside) {
         if app.tool.is_some() {
             crate::tools::on_hover(app, &proj, p);
         }
-        if resp.clicked() && !held {
+        if resp.clicked() && !held && !drawing_release {
             if app.tool.is_some() {
                 crate::tools::on_click(app, &proj, p);
             } else if app.dialog.as_ref().is_some_and(|d| d.wants_picks()) {
@@ -2112,13 +2148,13 @@ pub fn show(app: &mut SolveApp, ui: &mut egui::Ui) {
                 let on_glyph = crate::sketch_tools::glyph_at(p).filter(|_| sketching && !off("constraints"));
                 if !crate::sketch3d::click(app, &proj, p) {
                     match on_dim.or(on_glyph) {
-                        Some(id) => select(app, Some(Sel::SketchConstraint { id }), add),
+                        Some(id) => select_input(app, Some(Sel::SketchConstraint { id }), add, pencil),
                         // Clicking again on the same spot selects the next thing under it (not
                         // the second click of a double-click, which has its own actions).
                         None if !add && !resp.double_clicked() && crate::select_other::cycle_click(app, &proj, p) => {}
                         None => {
                             let sel = cand.and_then(|c| c.1);
-                            select(app, sel.clone(), add);
+                            select_input(app, sel.clone(), add, pencil);
                             crate::select_other::note_click(app, p, if add { None } else { sel });
                         }
                     }
@@ -2127,8 +2163,12 @@ pub fn show(app: &mut SolveApp, ui: &mut egui::Ui) {
         }
         // Double-click a dimension: edit its value in place.
         let dim_edit = resp.double_clicked() && !held && app.tool.is_none() && app.dialog.is_none() && crate::dim_view::double_click(app, p);
+        if app.ui.apple_touch && !pencil && resp.double_clicked() && !held && !dim_edit && app.tool.is_none() && app.dialog.is_none() {
+            crate::apple_touch::align_face(app, p);
+        }
         // Double-click a sketch curve: select the chain joined to it end to end.
         if resp.double_clicked()
+            && !pencil
             && !held
             && !dim_edit
             && app.tool.is_none()
@@ -2143,6 +2183,7 @@ pub fn show(app: &mut SolveApp, ui: &mut egui::Ui) {
         }
         // Double-click an edge: select the edges that continue it smoothly (the loop).
         if resp.double_clicked()
+            && !pencil
             && !held
             && !dim_edit
             && app.tool.is_none()
@@ -2377,8 +2418,15 @@ pub fn show(app: &mut SolveApp, ui: &mut egui::Ui) {
     }
 }
 
-/// A click without a command: select the candidate (replacing the selection, or toggling it
-/// in with Shift/Ctrl); a click on nothing clears.
+/// Pencil taps toggle individual picks; a tap in empty space clears the selection.
+fn select_input(app: &mut SolveApp, sel: Option<Sel>, add: bool, pencil: bool) {
+    // Empty-space Pencil taps clear even though geometry taps use additive selection.
+    let add = if pencil { sel.is_some() } else { add };
+    select(app, sel, add);
+}
+
+/// A click without a command: replace the selection, or toggle with Shift/Ctrl.
+/// Clicking nothing clears unless an additive modifier is held.
 pub(crate) fn select(app: &mut SolveApp, sel: Option<Sel>, add: bool) {
     match sel {
         Some(x) => {
@@ -2748,7 +2796,11 @@ pub(crate) fn refresh_layout(app: &mut SolveApp, scale: f32) {
         .into_iter()
         .flatten()
         .collect();
-        app.viewport.layout = Some(crate::viewport_layout::Layout::new(rect, &docks, scale, app.preferences.navigator_style));
+        app.viewport.layout = Some(if app.ui.apple_touch {
+            crate::viewport_layout::Layout::new_touch(rect, &docks, scale, app.preferences.navigator_style)
+        } else {
+            crate::viewport_layout::Layout::new(rect, &docks, scale, app.preferences.navigator_style)
+        });
     }
 }
 
@@ -2977,6 +3029,9 @@ fn signed_axis_view(app: &mut SolveApp, ui: &mut egui::Ui, rect: Rect) {
             }
         }
     }
+    if app.ui.apple_touch {
+        return;
+    }
     let home = Rect::from_center_size(pos2(c.x - 44.0, c.y - 44.0), vec2(18.0, 18.0));
     crate::scenario::publish_rect("axis_view:home", home);
     crate::scenario::publish_handle("axis_view:home", home.center());
@@ -3057,7 +3112,7 @@ fn nav_bar(app: &mut SolveApp, ui: &mut egui::Ui, rect: Rect) {
         return;
     }
     let t = Tokens::get();
-    let items: [(&str, &str); 10] = [
+    let all_items: [(&str, &str); 10] = [
         (
             "orbit",
             if app.preferences.nav == crate::prefs::OPENSCAD_NAV {
@@ -3076,9 +3131,12 @@ fn nav_bar(app: &mut SolveApp, ui: &mut egui::Ui, rect: Rect) {
         ("style", "Visual style: shaded with edges, shaded, wireframe, shaded with hidden edges"),
         ("settings", "View settings: grid, ground shadow, agent cursor"),
     ];
+    let items: Vec<_> =
+        all_items.into_iter().filter(|(icon, _)| !app.ui.apple_touch || !matches!(*icon, "orbit" | "spin" | "pan" | "zoom")).collect();
     let menu_id = ui.id().with("nav_view_menu");
     let mut menu_open = ui.data(|d| d.get_temp::<bool>(menu_id)).unwrap_or(false);
-    let w = items.len() as f32 * 30.0 + 10.0;
+    let step = if app.ui.apple_touch { 44.0 } else { 30.0 };
+    let w = items.len() as f32 * step + 10.0;
     let bar = app
         .viewport
         .layout
@@ -3095,13 +3153,14 @@ fn nav_bar(app: &mut SolveApp, ui: &mut egui::Ui, rect: Rect) {
     let mut painter = ui.painter_at(rect);
     painter.set_opacity(if active || app.preferences.navigator_style == crate::prefs::NavigatorStyle::Axes { 1.0 } else { 0.45 });
     painter.rect(bar, 6.0, t.overlay, Stroke::new(1.0, t.border), egui::StrokeKind::Inside);
-    let columns = ((bar.width() - 10.0) / 30.0).round().clamp(1.0, 10.0) as usize;
+    let columns = ((bar.width() - 10.0) / step).round().clamp(1.0, 10.0) as usize;
     for (i, (icon, tip)) in items.iter().enumerate() {
         let br = Rect::from_min_size(
-            pos2(bar.left() + 5.0 + (i % columns) as f32 * 30.0, bar.top() + 2.0 + (i / columns) as f32 * 30.0),
-            vec2(26.0, 26.0),
+            pos2(bar.left() + 5.0 + (i % columns) as f32 * step, bar.top() + 2.0 + (i / columns) as f32 * step),
+            vec2(step - 4.0, step - 4.0),
         );
         let resp = ui.interact(br, ui.id().with(("nav", *icon)), Sense::click());
+        crate::scenario::publish_rect(&format!("nav:{icon}"), br);
         let active = match *icon {
             "orbit" => app.viewport.nav == Some(NavMode::Orbit),
             "pan" => app.viewport.nav == Some(NavMode::Pan),
@@ -3148,8 +3207,8 @@ fn nav_bar(app: &mut SolveApp, ui: &mut egui::Ui, rect: Rect) {
 fn view_menu(app: &mut SolveApp, ui: &mut egui::Ui, button: Rect) -> bool {
     let area = crate::frame::area(egui::Id::new("sc_view_menu"))
         .order(egui::Order::Foreground)
-        .pivot(Align2::RIGHT_BOTTOM)
-        .fixed_pos(button.right_top() - vec2(0.0, 6.0));
+        .pivot(if app.ui.apple_touch { Align2::RIGHT_TOP } else { Align2::RIGHT_BOTTOM })
+        .fixed_pos(if app.ui.apple_touch { button.right_bottom() + vec2(0.0, 6.0) } else { button.right_top() - vec2(0.0, 6.0) });
     let r = area.show(ui.ctx(), |ui| {
         egui::Frame::popup(ui.style()).show(ui, |ui| {
             ui.set_width(220.0);
@@ -3176,6 +3235,60 @@ fn view_menu(app: &mut SolveApp, ui: &mut egui::Ui, button: Rect) -> bool {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn pencil_selection_toggles_edges_and_faces_independently() {
+        let mut app = cylinder_app();
+        let body = app.session.world_state().bodies[0].clone();
+        let mesh = body.mesh();
+        let edge = Sel::Edge { body: body.name.clone(), index: 0, point: polyline_mid(&mesh.edges[0]) };
+        let face = Sel::Face { body: body.name.clone(), index: 0, point: mesh.positions[0] };
+        select_input(&mut app, Some(edge.clone()), false, true);
+        let edges = app.session.selection.clone();
+        assert!(!edges.is_empty());
+        select_input(&mut app, Some(face.clone()), false, true);
+        assert!(edges.iter().all(|edge| app.session.selection.iter().any(|item| crate::selection::same_item(edge, item))));
+        assert!(app.session.selection.iter().any(|item| crate::selection::same_item(&face, item)));
+        select_input(&mut app, Some(edge.clone()), false, true);
+        assert!(!app.session.selection.iter().any(|item| crate::selection::same_item(&edge, item)));
+        assert!(app.session.selection.iter().any(|item| crate::selection::same_item(&face, item)));
+        select_input(&mut app, Some(edge.clone()), false, true);
+        select_input(&mut app, Some(face.clone()), false, true);
+        assert!(app.session.selection.iter().any(|item| crate::selection::same_item(&edge, item)));
+        assert!(!app.session.selection.iter().any(|item| crate::selection::same_item(&face, item)));
+        select_input(&mut app, None, false, true);
+        assert!(app.session.selection.is_empty());
+    }
+
+    #[test]
+    fn pencil_selection_accumulates_and_empty_tap_clears_while_mouse_needs_shift() {
+        let mut h = crate::scenario::Harness::new();
+        h.app.home.open = false;
+        h.app.run("sketch.create", json!({"plane":"XY"})).unwrap();
+        h.app.run("sketch.line", json!({"points":[[0,0],[20,0]],"infer":false})).unwrap();
+        h.app.run("sketch.line", json!({"points":[[0,10],[20,10]],"infer":false})).unwrap();
+        h.app.cam.distance = 80.0;
+        h.frames(4);
+        crate::apple_touch::set_pencil_input(true);
+        h.step(&json!({"click":{"world":[10,0,0]}})).unwrap();
+        assert_eq!(h.app.session.selection.len(), 1);
+        h.step(&json!({"click":{"world":[10,10,0]}})).unwrap();
+        assert_eq!(h.app.session.selection.len(), 2);
+        h.step(&json!({"click":{"world":[10,0,0]}})).unwrap();
+        assert_eq!(h.app.session.selection.len(), 1, "tapping a selected line deselects only that line");
+        h.step(&json!({"click":{"world":[10,0,0]}})).unwrap();
+        assert_eq!(h.app.session.selection.len(), 2, "tapping it again selects it again");
+        h.step(&json!({"click":{"world":[-15,-10,0]}})).unwrap();
+        assert!(h.app.session.selection.is_empty());
+        crate::apple_touch::set_pencil_input(false);
+        h.step(&json!({"click":{"world":[10,0,0]}})).unwrap();
+        let first = h.app.session.selection.clone();
+        h.step(&json!({"click":{"world":[10,10,0]}})).unwrap();
+        assert_eq!(h.app.session.selection.len(), 1);
+        assert_ne!(h.app.session.selection, first);
+        h.step(&json!({"click":{"world":[10,0,0]},"shift":true})).unwrap();
+        assert_eq!(h.app.session.selection.len(), 2);
+    }
+
     use super::*;
 
     #[test]

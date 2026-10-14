@@ -45,6 +45,7 @@ mod lip;
 mod loopblend;
 mod measure;
 mod mesh_convert;
+mod mesh_faceted;
 mod meshbody;
 #[cfg(test)]
 mod modify_history_tests;
@@ -91,6 +92,7 @@ pub use iges_out::iges_export_bodies;
 pub use lip::raise_band;
 pub use measure::{BodyMeasure, measure};
 pub use mesh_convert::convert_prismatic_mesh;
+pub use mesh_faceted::convert_faceted_mesh;
 pub use meshbody::{MAX_TRIANGLES, mesh_body};
 pub use native::{decode_native_body, encode_native_body, native_preview_mesh};
 pub use offset::with_same_surface;

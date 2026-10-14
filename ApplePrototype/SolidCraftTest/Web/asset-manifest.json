@@ -1,0 +1,58 @@
+{
+  "origin": "local source build",
+  "base_revision": "2bb24d1d2ab3c06bac41265716b6e4b3801fa857",
+  "modified_source": true,
+  "profile": "release, Rust optimization enabled, wasm-opt disabled for prototype iteration",
+  "files": [
+    {
+      "file": "ATTRIBUTION.md",
+      "sha256": "645a44a9972ff398066669764ef9e44c2ecb9f7ce10cad9bfc1060013bd9e203",
+      "bytes": 16182
+    },
+    {
+      "file": "LICENSE-APACHE",
+      "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+      "bytes": 10174
+    },
+    {
+      "file": "LICENSE-MIT",
+      "sha256": "1a26c1e94401d5d221896c74dd1c58d227edc64516da95aaac6f675567c8af63",
+      "bytes": 1080
+    },
+    {
+      "file": "NOTICE",
+      "sha256": "aaeb733fb3e10751329eeedae8f16386dd1a9cd320d7037f3d63e9ff1a74a66d",
+      "bytes": 1648
+    },
+    {
+      "file": "THIRD-PARTY-LICENSES.txt",
+      "sha256": "fa8d1f505f68267e8a68ec075ddd09500454ef3f212b27f59506f95f5a182d6e",
+      "bytes": 726894
+    },
+    {
+      "file": "fonts/BIZUDPGothic-Regular.ttf",
+      "sha256": "258d7156c165f2ff774b6efee637c22c3b950de0d8a10e501137061bc8085d01",
+      "bytes": 4669688
+    },
+    {
+      "file": "fonts/OFL.txt",
+      "sha256": "e753d7155d53c747d037a445e584c8ecfca6dd79846db610417e282a736b28bc",
+      "bytes": 4408
+    },
+    {
+      "file": "index.html",
+      "sha256": "d97e4df3e3fcc596af0f2ce7819a014cc8b5a7a6531b3517fc419e1f8493d480",
+      "bytes": 2541
+    },
+    {
+      "file": "solidcraft-web-3967bd64c0cae432.js",
+      "sha256": "4aa591b8007798022ed2cc05528f43bbcb7652f840957bfb3681f06b81b95e54",
+      "bytes": 160143
+    },
+    {
+      "file": "solidcraft-web-3967bd64c0cae432_bg.wasm",
+      "sha256": "ebd60fe268e695863b4d7c58f9ab295a9e1760ec11ab839d7cf691d621a27266",
+      "bytes": 34814487
+    }
+  ]
+}

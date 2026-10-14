@@ -30,6 +30,35 @@ mod web {
     thread_local! {
         /// An open design has unsaved changes: leaving the page asks first.
         static UNSAVED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+        static ALIGN: std::cell::RefCell<Option<(f32, f32)>> = const { std::cell::RefCell::new(None) };
+    }
+
+    #[wasm_bindgen::prelude::wasm_bindgen]
+    pub fn touch_set_pencil(pencil: bool) {
+        solidcraft_ui_egui::apple_touch::set_pencil_input(pencil);
+    }
+
+    #[wasm_bindgen::prelude::wasm_bindgen]
+    pub fn touch_is_model(x: f32, y: f32) -> bool {
+        solidcraft_ui_egui::apple_touch::is_model_point(x, y)
+    }
+
+    #[wasm_bindgen::prelude::wasm_bindgen]
+    pub fn touch_layout() -> String {
+        solidcraft_ui_egui::apple_touch::layout()
+    }
+
+    #[wasm_bindgen::prelude::wasm_bindgen]
+    pub fn touch_project(x: f64, y: f64, z: f64) -> String {
+        solidcraft_ui_egui::apple_touch::project(x, y, z)
+    }
+
+    #[wasm_bindgen::prelude::wasm_bindgen]
+    pub fn touch_align_face(x: f32, y: f32) {
+        if x.is_finite() && y.is_finite() && touch_is_model(x, y) {
+            ALIGN.with(|at| *at.borrow_mut() = Some((x, y)));
+            solidcraft_ui_egui::apple_touch::request_repaint();
+        }
     }
 
     /// The browser's "leave site? changes you made may not be saved" prompt while a design has
@@ -93,9 +122,23 @@ mod web {
                     vfs::insert(&path, bytes);
                     path
                 };
-                match intent {
-                    Intent::Open => self.app.open_path(&path),
-                    Intent::Insert => self.app.drop_path(&path),
+                let ext = name.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
+                if matches!(ext.as_str(), "dxf" | "svg") {
+                    let command = if ext == "dxf" { "sketch.insert_dxf" } else { "sketch.insert_svg" };
+                    if let Ok(result) = self.app.run(command, serde_json::json!({"path":path})) {
+                        if let Some(warnings) = result["warnings"].as_array() {
+                            let message = warnings.iter().filter_map(|v| v.as_str()).collect::<Vec<_>>().join(" ");
+                            self.app.set_status(message, false);
+                        }
+                        self.app.fit_view();
+                    }
+                } else if ext == "dwg" {
+                    self.app.set_status("DWG is not supported. Export an ASCII DXF, then insert it as a sketch.", true);
+                } else {
+                    match intent {
+                        Intent::Open => self.app.open_path(&path),
+                        Intent::Insert => self.app.insert_path(&path),
+                    }
                 }
                 self.files.panel.set(false);
             }
@@ -353,6 +396,10 @@ mod web {
         fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
             self.tick_font(ctx);
             self.app.logic(ctx);
+            if let Some((x, y)) = ALIGN.with(|at| at.borrow_mut().take()) {
+                solidcraft_ui_egui::apple_touch::align_face(&mut self.app, egui::pos2(x, y) / ctx.zoom_factor());
+                ctx.request_repaint();
+            }
             self.files_tick(ctx);
             UNSAVED.with(|u| u.set(solidcraft_ui_egui::documents::any_dirty(&self.app)));
         }
@@ -365,6 +412,7 @@ mod web {
             let ctx = ui.ctx().clone();
             self.file_panel(&ctx);
             self.recovery_prompt(&ctx);
+            solidcraft_ui_egui::apple_touch::update(&self.app, &ctx);
         }
         fn save(&mut self, storage: &mut dyn eframe::Storage) {
             // Persist the user's own language, not a session-only English fallback.
@@ -417,10 +465,19 @@ mod web {
                         let files = Rc::new(Files::default());
                         files::start(&files);
                         let panel = files.clone();
+                        let insert_files = files.clone();
                         let services = Services {
                             // Open shows the browser's files (and the computer's, from there).
                             pick_open: Some(Box::new(move || {
-                                panel.panel.set(true);
+                                if query().contains("apple") {
+                                    files::pick_from_disk(&panel, Intent::Open);
+                                } else {
+                                    panel.panel.set(true);
+                                }
+                                None
+                            })),
+                            pick_insert: Some(Box::new(move || {
+                                files::pick_from_disk(&insert_files, Intent::Insert);
                                 None
                             })),
                             // Designs are kept in the browser; everything else is downloaded.
@@ -434,6 +491,7 @@ mod web {
                         if let Some(p) = cc.storage.and_then(|s| solidcraft_ui_egui::prefs::stored(|k| s.get_string(k))) {
                             app.load_prefs(&p);
                         }
+                        app.ui.apple_touch = query().contains("apple");
                         if let Some(rs) = &cc.wgpu_render_state {
                             // eframe's web painter has no stencil buffer.
                             app.set_wgpu(rs, DEPTH_BITS, 0, 1);

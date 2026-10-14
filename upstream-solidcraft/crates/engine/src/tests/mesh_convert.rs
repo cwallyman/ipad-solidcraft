@@ -91,3 +91,52 @@ fn exported_binary_stl_with_a_bore_reconstructs_analytic_faces() {
     assert_eq!(body.faces(0.01).unwrap().len(), 10);
     std::fs::remove_file(path).unwrap();
 }
+
+#[test]
+fn faceted_conversion_persists_method_and_supports_undo() {
+    let mut s = imported_box();
+    run(&mut s, "mesh.convert", json!({"body":"Mesh","method":"faceted"}));
+    assert!(!s.model.state().body("Mesh").unwrap().body.is_mesh());
+    assert_eq!(s.model.state().body("Mesh").unwrap().body.faces(0.01).unwrap().len(), 6);
+    let cold = Session::new(Document::from_json(&s.doc.to_json()).unwrap());
+    assert!(!cold.model.state().body("Mesh").unwrap().body.is_mesh());
+    assert!(cold.model.results.iter().all(|r| r.error.is_none()));
+    run(&mut s, "edit.undo", json!({}));
+    assert!(s.model.state().body("Mesh").unwrap().body.is_mesh());
+    let before = s.doc.to_json();
+    assert!(s.execute("mesh.convert", &json!({"body":"Mesh","method":"unknown"})).is_err());
+    assert_eq!(before, s.doc.to_json());
+}
+
+#[test]
+#[ignore = "local user STL verification; set SOLIDCRAFT_LOCAL_MESH"]
+fn local_stl_faceted_conversion_and_step_export() {
+    let path = std::env::var("SOLIDCRAFT_LOCAL_MESH").unwrap();
+    let mut s = Session::default();
+    run(&mut s, "doc.open", json!({"path":path}));
+    let name = s.model.state().bodies[0].name.clone();
+    run(&mut s, "mesh.convert", json!({"body":name,"method":"faceted"}));
+    let check = |s: &Session| {
+        let st = s.model.state();
+        assert!(st.bodies.iter().all(|b| !b.body.is_mesh() && b.body.validity().is_empty()));
+        assert!(s.model.results.iter().all(|r| r.error.is_none()));
+        println!(
+            "Converted bodies: {}; faces: {}; volume: {}",
+            st.bodies.len(),
+            st.bodies.iter().map(|b| b.body.faces(0.01).unwrap().len()).sum::<usize>(),
+            st.bodies.iter().map(|b| b.body.volume_at(0.01).unwrap()).sum::<f64>()
+        );
+    };
+    check(&s);
+    let cold = Session::new(Document::from_json(&s.doc.to_json()).unwrap());
+    check(&cold);
+    if let Ok(output) = std::env::var("SOLIDCRAFT_LOCAL_STEP_OUTPUT") {
+        run(&mut s, "file.export", json!({"path":output,"format":"step"}));
+        let step = std::fs::read_to_string(&output).unwrap();
+        assert!(!step.contains("BREP_WITH_VOIDS"));
+        let imported = solidcraft_kernel::step_import(&step).unwrap();
+        assert!(imported.warnings.is_empty(), "{:?}", imported.warnings);
+        assert_eq!(imported.bodies.len(), s.model.state().bodies.len());
+        assert!(imported.bodies.iter().all(|b| b.body.validity().is_empty()));
+    }
+}

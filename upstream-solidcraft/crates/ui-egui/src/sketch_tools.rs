@@ -39,6 +39,8 @@ thread_local! {
 /// Commands registered on one panel that Fusion also lists on another: the analyses (sketch
 /// INSPECT) on SOLID INSPECT, and Interference (SOLID INSPECT) on sketch INSPECT.
 const ALSO_IN: &[(&str, &str, &str)] = &[
+    ("SOLID", "INSERT", "sketch.insert_dxf"),
+    ("SOLID", "INSERT", "sketch.insert_svg"),
     ("SOLID", "INSPECT", "inspect.zebra"),
     ("SOLID", "INSPECT", "inspect.draft"),
     ("SOLID", "INSPECT", "inspect.curvature_map"),
@@ -370,6 +372,11 @@ fn mode(id: &str) -> Option<Mode> {
 }
 
 /// A tool for one of the extra sketch commands.
+/// Point-based drawing tools can place the next point by dragging and lifting.
+pub fn supports_draw_drag(id: &str) -> bool {
+    matches!(mode(id), Some(Mode::Points(n)) if n != 1)
+}
+
 pub fn tool_for(id: &str) -> Option<Tool> {
     mode(id)?;
     let spec = solidcraft_engine::find_command(id)?;

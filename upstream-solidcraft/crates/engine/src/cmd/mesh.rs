@@ -17,7 +17,7 @@ pub static COMMANDS: &[CommandSpec] = &[
     CommandSpec::new("mesh.convert", "Convert Mesh", convert)
         .at("MESH", "MODIFY")
         .icon("import")
-        .params("body: mesh body name; tolerance?: length expression (default 0.05 mm): reconstruct a closed constant-section mechanical mesh as editable planar and cylindrical faces, with a parametric timeline feature; name?"),
+        .params("body: mesh body name; tolerance?: length expression (default 0.05 mm): reconstruct a closed constant-section mechanical mesh as editable planar and cylindrical faces, with a parametric timeline feature; method?: prismatic (default) or faceted (deduplicate triangles, preserve separate closed shells, merge planar facets; max 5000 triangles); name?"),
 ];
 
 fn convert(s: &mut Session, p: &Value) -> Result<Value> {
@@ -33,5 +33,9 @@ fn convert(s: &mut Session, p: &Value) -> Result<Value> {
     }
     let tolerance = expr(p, "tolerance").unwrap_or_else(|| "0.05 mm".into());
     check_expr(s, &tolerance, Kind::Length, cmd, "tolerance")?;
-    add_feature(s, p, FeatureKind::MeshConvert { body: body.into(), tolerance })
+    let method = str_(p, "method").unwrap_or("prismatic");
+    if !matches!(method, "prismatic" | "faceted") {
+        return Err(bad(cmd, "method must be prismatic or faceted"));
+    }
+    add_feature(s, p, FeatureKind::MeshConvert { body: body.into(), tolerance, faceted: method == "faceted" })
 }

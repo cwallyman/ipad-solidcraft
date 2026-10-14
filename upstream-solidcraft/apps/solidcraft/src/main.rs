@@ -62,6 +62,7 @@ impl eframe::App for App {
 
 fn services() -> Services {
     Services {
+        pick_insert: None,
         pick_open: Some(Box::new(|| {
             rfd::FileDialog::new()
                 .add_filter(

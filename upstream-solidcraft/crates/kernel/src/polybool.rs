@@ -1012,6 +1012,27 @@ fn rebuild(polys: Vec<Poly>, size: f64, sources: &Sources) -> Result<Body> {
     })
 }
 
+/// Reuse the planar topology builder for one certified, closed mesh shell.
+/// Adjacent coplanar triangles merge; curved surfaces retain their facets.
+pub(crate) fn rebuild_mesh_shell(mesh: &crate::meshbody::TriMesh) -> Result<Body> {
+    let mut bounds = solidcraft_geom::Aabb3::EMPTY;
+    let mut polys = Vec::new();
+    for (face, t) in mesh.triangles.iter().enumerate() {
+        let (Some(&a), Some(&b), Some(&c)) =
+            (mesh.positions.get(t[0] as usize), mesh.positions.get(t[1] as usize), mesh.positions.get(t[2] as usize))
+        else {
+            return Err(KernelError::Invalid("mesh triangle refers to a missing vertex".into()));
+        };
+        let n = (b - a).cross(c - a).normalized().ok_or_else(|| KernelError::Invalid("degenerate mesh triangle".into()))?;
+        for p in [a, b, c] {
+            bounds.add(p);
+        }
+        polys.push(Poly { v: vec![a, b, c], plane: PlaneEq { n, w: n.dot(a) }, src: FaceOrigin::Face { operand: 0, face } });
+    }
+    let sources = Sources { counts: vec![(mesh.triangles.len(), 0)], edges: vec![None] };
+    rebuild(polys, bounds.size().len().max(1e-3), &sources).map(Body::without_history)
+}
+
 /// A vertex where the solid's surface pinches, as where two blocks meet at one corner only
 /// (#679): the faces around it form several fans that share no edge there. Each fan past the
 /// first gets its own copy of the vertex (same point), so every vertex of the shell is a

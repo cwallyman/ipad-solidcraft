@@ -10,6 +10,7 @@
 
 pub mod access;
 pub mod agent_cursor;
+pub mod apple_touch;
 pub mod browser;
 pub mod canvas;
 pub mod context_menu;
@@ -133,6 +134,10 @@ pub use control::{ControlRequest, ControlResponse};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct UiState {
+    /// Apple touch shell: finger navigation, compact view controls and browser docking.
+    pub apple_touch: bool,
+    pub browser_width: f32,
+    pub browser_docked: bool,
     /// Toolbar tab: SOLID, SURFACE, MESH, SHEET METAL, PLASTIC, UTILITIES (SKETCH while sketching).
     pub tab: String,
     pub show_browser: bool,
@@ -167,6 +172,9 @@ pub struct UiState {
 impl Default for UiState {
     fn default() -> Self {
         UiState {
+            apple_touch: false,
+            browser_width: 250.0,
+            browser_docked: false,
             tab: "SOLID".into(),
             show_browser: true,
             show_timeline: true,
@@ -193,6 +201,7 @@ impl Default for UiState {
 #[derive(Default)]
 pub struct Services {
     pub pick_open: Option<Box<dyn Fn() -> Option<String>>>,
+    pub pick_insert: Option<Box<dyn Fn() -> Option<String>>>,
     pub pick_save: Option<Box<dyn Fn(&str, &[&str]) -> Option<String>>>,
     pub show_in_folder: Option<Box<dyn Fn(&str)>>,
     /// Where the host reads the anti-aliasing preference at start (a small JSON file).
@@ -376,6 +385,8 @@ impl SolveApp {
             "visual_style": self.ui.visual_style,
             "browser_collapsed": self.tree.collapsed,
             "browser_expanded": self.tree.expanded,
+            "browser_width": self.ui.browser_width,
+            "browser_docked": self.ui.browser_docked,
             "recent": self.home.recent,
             "recent_opened_at": self.home.opened_at,
             "shortcut_box": self.sbox.prefs(),
@@ -393,6 +404,12 @@ impl SolveApp {
     pub fn load_prefs(&mut self, prefs: &str) {
         let Ok(v) = serde_json::from_str::<Value>(prefs) else { return };
         let flag = |k: &str| v.get(k).and_then(Value::as_bool);
+        if let Some(width) = v.get("browser_width").and_then(Value::as_f64).filter(|w| w.is_finite()) {
+            self.ui.browser_width = width.clamp(160.0, 560.0) as f32;
+        }
+        if let Some(docked) = flag("browser_docked") {
+            self.ui.browser_docked = docked;
+        }
         self.home.opened_at = v.get("recent_opened_at").and_then(|x| serde_json::from_value(x.clone()).ok()).unwrap_or_default();
         if let Some(d) = flag("dark") {
             self.ui.dark = d;
@@ -550,13 +567,13 @@ impl SolveApp {
         self.tool = None;
         self.home.open = false;
         if matches!(id, "sketch.insert_dxf" | "sketch.insert_svg") {
-            if let Some(path) = self.services.pick_open.as_ref().and_then(|f| f()) {
+            if let Some(path) = self.services.pick_insert.as_ref().or(self.services.pick_open.as_ref()).and_then(|f| f()) {
                 let _ = self.run(id, json!({"path": path}));
             }
             return;
         }
         if matches!(id, "file.insert_step" | "file.insert_mesh") {
-            if let Some(p) = self.services.pick_open.as_ref().and_then(|f| f()) {
+            if let Some(p) = self.services.pick_insert.as_ref().or(self.services.pick_open.as_ref()).and_then(|f| f()) {
                 self.insert_path_async(&p);
             }
             return;
@@ -1033,6 +1050,9 @@ impl SolveApp {
 
     /// Lay out the whole window.
     pub fn ui(&mut self, ui: &mut egui::Ui) {
+        if self.ui.apple_touch {
+            ui.style_mut().interaction.resize_grab_radius_side = 10.0;
+        }
         expression_complete::begin_frame(ui.ctx());
         let t0 = now_ms();
         let _language = crate::i18n::scope(&self.preferences.language);

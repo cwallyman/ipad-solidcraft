@@ -21,6 +21,18 @@ fn panel_accent(t: Tokens, tab: &str, panel: &str) -> Color32 {
     }
 }
 
+/// Clicking the active panel again dismisses it; another panel replaces it.
+fn toggle_panel_menu(ctx: &egui::Context, popup_id: egui::Id) {
+    ctx.data_mut(|d| {
+        let key = egui::Id::new("sc_panel_open");
+        if d.get_temp::<egui::Id>(key) == Some(popup_id) {
+            d.remove::<egui::Id>(key);
+        } else {
+            d.insert_temp(key, popup_id);
+        }
+    });
+}
+
 /// Panels shown on each tab (in order). Commands come from the registry by (tab, panel).
 pub fn panels(tab: &str) -> &'static [&'static str] {
     if let Some(p) = crate::workspace::panels(tab) {
@@ -611,7 +623,7 @@ pub fn toolbar(app: &mut SolveApp, ui: &mut egui::Ui) {
                 caret(&painter, pos2(br.center().x, br.bottom() - 3.0), t.text_dim);
                 let tip = format!("{} ({})", app.tr_label(panel), shown.len().max(cmds.len()));
                 if fresp.on_hover_text(tip).clicked() && enabled_panel {
-                    ui.ctx().data_mut(|d| d.insert_temp(egui::Id::new("sc_panel_open"), popup_id));
+                    toggle_panel_menu(ui.ctx(), popup_id);
                     opened = true;
                 }
             }
@@ -731,6 +743,7 @@ pub fn toolbar(app: &mut SolveApp, ui: &mut egui::Ui) {
             let lr = Rect::from_center_size(pos2(px + width / 2.0, top + 51.0), vec2(width, (g.size().y + 2.0).max(18.0)));
             let lresp = ui.interact(lr, ui.id().with(("panel", panel)), Sense::click());
             crate::scenario::publish_handle(&format!("panel:{tab}:{panel}"), lr.center());
+            crate::scenario::publish_rect(&format!("panel:{tab}:{panel}"), lr);
             if lresp.hovered() && enabled_panel {
                 painter.rect_filled(lr, 3.0, t.hover);
             }
@@ -740,7 +753,7 @@ pub fn toolbar(app: &mut SolveApp, ui: &mut egui::Ui) {
             painter.galley(pos2(gx, gy), g, lc);
             caret(&painter, pos2(gx + gw / 2.0 + 6.0, lr.center().y), lc);
             if lresp.clicked() {
-                ui.ctx().data_mut(|d| d.insert_temp(egui::Id::new("sc_panel_open"), popup_id));
+                toggle_panel_menu(ui.ctx(), popup_id);
             }
             // Labels, gaps and margins append; actual buttons keep their insert-before target.
             // Respect the current layer so a dropdown covering the panel is not a drop target.
@@ -935,6 +948,7 @@ fn dropdown_row(app: &SolveApp, ui: &mut egui::Ui, c: &'static solidcraft_engine
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled() && info.enabled, &label));
     crate::scenario::publish_handle(&format!("toolbar:{}", c.id), rect.center());
     crate::scenario::publish_handle(&format!("dropdown:{}", c.id), rect.center());
+    crate::scenario::publish_rect(&format!("dropdown:{}", c.id), rect);
     let hot = info.enabled && (pointer_on || resp.has_focus());
     let p = ui.painter();
     if hot {
@@ -1466,6 +1480,40 @@ mod home_tests {
 #[cfg(test)]
 mod dropdown_tests {
     use super::*;
+
+    #[test]
+    fn panel_trigger_toggles_and_switches_menus() {
+        let ctx = egui::Context::default();
+        let create = egui::Id::new("create");
+        let modify = egui::Id::new("modify");
+        let active = || ctx.data(|d| d.get_temp::<egui::Id>(egui::Id::new("sc_panel_open")));
+        toggle_panel_menu(&ctx, create);
+        assert_eq!(active(), Some(create));
+        toggle_panel_menu(&ctx, create);
+        assert_eq!(active(), None);
+        toggle_panel_menu(&ctx, create);
+        toggle_panel_menu(&ctx, modify);
+        assert_eq!(active(), Some(modify));
+        toggle_panel_menu(&ctx, modify);
+        assert_eq!(active(), None);
+    }
+
+    #[test]
+    fn clicking_panel_label_again_closes_the_dropdown() {
+        let mut h = crate::scenario::Harness::new();
+        h.app.home.open = false;
+        h.call("ui.resize", json!({"width":1400,"height":800}));
+        h.frames(4);
+        for panel in ["CREATE", "MODIFY"] {
+            let handle = format!("panel:SOLID:{panel}");
+            h.step(&json!({"click":{"handle":handle}})).unwrap();
+            h.frames(4);
+            assert!(h.ctx.data(|d| d.get_temp::<egui::Id>(egui::Id::new("sc_panel_open"))).is_some());
+            h.step(&json!({"click":{"handle":handle}})).unwrap();
+            h.frames(4);
+            assert!(h.ctx.data(|d| d.get_temp::<egui::Id>(egui::Id::new("sc_panel_open"))).is_none());
+        }
+    }
 
     /// A drop-down taller than the window stops at its bottom and scrolls: the last row is
     /// reached with the arrow keys and comes into view.
