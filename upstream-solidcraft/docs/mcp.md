@@ -1,0 +1,142 @@
+# SolidCraft and AI agents (MCP)
+
+SolidCraft speaks the [Model Context Protocol](https://modelcontextprotocol.io) over stdio
+(JSON-RPC 2.0, one message per line; protocol revisions 2025-06-18, 2025-03-26 and 2024-11-05).
+An agent models exactly like a person does: every tool runs engine commands, the same ones the
+toolbar, palette, scripts and control channel use, and never opens a dialog.
+
+## Start it
+
+```sh
+# Headless: an in-process design session, no window (CPU renders for screenshots).
+solidcraft-cli mcp
+
+# Headless, starting from a design file or a command script.
+solidcraft-cli mcp --in part.solidcraft
+
+# Bridged to the running app, so you can watch the agent model:
+solidcraft --control 7878 &
+solidcraft-cli mcp --connect 127.0.0.1:7878
+```
+
+stdout carries only protocol messages; errors go to stderr. Bridged screenshots are written to a
+temporary file by the app and read back by the server, so both must run on the same machine.
+
+### Client configuration
+
+Claude Code (project `.mcp.json`, or `claude mcp add solidcraft -- solidcraft-cli mcp`; a setup
+added under the previous name keeps working, see the [compatibility notes](https://github.com/bherbruck/solidcraft/blob/main/docs/compatibility.md#mcp)):
+
+```json
+{
+  "mcpServers": {
+    "solidcraft": { "command": "solidcraft-cli", "args": ["mcp"] }
+  }
+}
+```
+
+Claude Desktop (`claude_desktop_config.json`), bridged to a running app:
+
+```json
+{
+  "mcpServers": {
+    "solidcraft": { "command": "/path/to/solidcraft-cli", "args": ["mcp", "--connect", "127.0.0.1:7878"] }
+  }
+}
+```
+
+## Tools
+
+| Tool | Arguments | What it does |
+|---|---|---|
+| `list_commands` | `filter?` | The command catalog: id, label, tab/panel, shortcut, parameter docs, enabled now. `filter` matches id, label, tab and panel. |
+| `execute` | `command`, `params?`, `verbose?` (default true) | Run any command with JSON parameters (`list_commands` shows them). Failures leave the design unchanged. A feature command replies with the feature (`feature`, `name`), every body (`bodies`) and the bodies it created, changed and removed (`created_bodies`, `changed_bodies`, `removed_bodies`). `verbose: false` uses the same compact reply as `batch`. |
+| `batch` | `commands: [{command, params}]`, `rollback?` (default true), `verbose?` (default true) | Run steps in order, stop at the first error and undo the completed steps. The reply names the failing step (`failed.index`, `failed.command`, `failed.error`) and every result before it. `verbose: false` keeps the reply small in large designs: feature steps leave out the full body list (`created_bodies`, `changed_bodies`, `removed_bodies` stay) and sketch steps the ids they repeat outside `created`. |
+| `inspect_design` | `measure?` (default true), `sketches?` (default true) | Parameters, timeline (type, suppressed, rolled back, error, warning, timing), bodies (volume, area, centre of mass, bbox, face/edge/vertex counts, visible), sketches (curves, points, constraints, profiles, DOF, solve status, visible), selection, undo depth. Hide helper sketches, bodies or construction planes with `execute` `browser.visibility` (`{items, visible}` or `{folder, visible}`). |
+| `measure` | `body?` | Volume (mm³), area (mm²), centre of mass, bbox and topology counts per body, with totals. |
+| `body_topology` | `body` | Edges (index, midpoint, length, ends) and faces (index, area, centroid, normal). An edge midpoint is the `[x,y,z]` that picks that edge for fillet and chamfer. |
+| `set_parameter` | `name`, `value` (number or expression), `unit?`, `comment?` | Create or change a user parameter and recompute; reports `recomputed` (features rebuilt), `restored` (features whose earlier result for the same inputs was reused, e.g. a value set back) and features that now fail. |
+| `screenshot` | `view?` (iso, top, front, back, bottom, left, right, home, fit, or a named view saved with `view.save`), `camera?` (`{target, yaw, pitch, distance, fov?}`, as `view.apply`), `path?`, `width?`, `height?`, `source?` (window, model) | A PNG image content block. Headless: CPU render fitted to the model, or from the named view or camera. Bridged: the app window (default) or a model render with the app's camera; a named view or camera moves the app's viewport there first (`execute` `view.apply` does the same without a screenshot). |
+| `export` | `path`, `format?` (step, 3mf, stl, stla, obj), `bodies?` | STEP, 3MF or mesh export. |
+| `undo`, `redo` | — | Undo / redo one change. |
+| `crash_reports` | `id?`, `limit?` | The crash reports on this computer, newest first; with `id`, the whole report (backtrace, command, recent commands, `design_path`/`replay_path`). See [crash-reports.md](crash-reports.md). |
+| `new_design` | `name?` | Start an empty design. |
+| `open` | `path` | Open a `.solidcraft` design, a STEP file (`.step`/`.stp`) as a new design holding its bodies (an Import base feature), or a 3MF/STL file as mesh bodies. |
+| `save` | `path?` | Save the design (to its current file without `path`). |
+
+To change a feature after it is made, read its definition with `execute` `timeline.inspect`
+(`{feature}`: id or name) and change fields with `timeline.edit` (`{feature, set}`; e.g.
+`{"extent": {"distance": "30"}}`). The fields per feature type are listed in the book's
+*Solid features* chapter.
+
+Resources: `solidcraft://design` (inspect JSON with measurements) and `solidcraft://commands`
+(the catalog).
+
+Errors: an unknown tool or arguments that don't match the tool's schema are JSON-RPC
+`-32602` errors; an engine failure (bad command parameters, a feature that fails) is a tool
+result with `isError: true` and the engine's message, which the model can read and correct.
+
+`batch` rollback goes back to an engine checkpoint (`edit.checkpoint`) taken before the first
+step: the design, the active sketch and the undo history are restored exactly as they were,
+however long the history is. Batches that call `file.new` or `doc.open` get the design back,
+not its file path. (An older app without checkpoints falls back to undoing as many steps as
+the batch added to the undo history.)
+
+## Compact replies
+
+`execute` and `batch` default to `verbose: true`, preserving the full command results.
+For long modelling sessions, set `verbose: false` at the tool-argument level:
+
+```json
+{"name": "execute", "arguments": {"command": "solid.box", "params": {"length": 10, "width": 10, "height": 10}, "verbose": false}}
+```
+
+Feature replies omit the full `bodies` list while keeping `feature`, `name`,
+`created_bodies`, `changed_bodies` and `removed_bodies`. A cut can therefore report a
+changed body even when no body name was added or removed. Sketch replies keep new
+IDs under `created` and omit only identical top-level `points`, `curves`,
+`constraints` and `dimensions` lists. Other fields and errors are unchanged;
+inspection commands still return their complete results. Compaction uses the
+engine's reply directly, without an additional design-inspection request.
+
+## Demo: an enclosure built over MCP
+
+`examples/demo/enclosure_mcp.py` is a small MCP client. It drives a running app (`solidcraft
+--control PORT`) through `solidcraft-cli mcp --connect` and builds an electronics enclosure one
+`execute` call at a time (`enclosure_steps.json`): a rounded box, shelled open at the top, a
+USB port cut through a side wall, four screw bosses, and then a change of the `width`
+parameter that the timeline rebuilds. `examples/demo/record.sh` records the run with ffmpeg,
+with each step's caption burnt in.
+
+`examples/demo/enclosure_ui_mcp.py` (v2) builds the same part the way a person would: the
+modelling goes through the app's UI over its control channel. The pointer glides to toolbar
+buttons and faces and clicks them, the real dialogs open, the sketches go on the model's faces,
+and the camera follows. The parameters, the sketch dimensions bound to them and two extrudes go
+over MCP. With `--story v3` (the default) one standoff is patterned 2 × 2 in the Rectangular
+Pattern dialog with spacings from the parameters, and width and wall are then changed in the
+Parameters dialog. `record_ui.sh` records it and draws the pointer and the captions.
+
+## A typical session
+
+```text
+→ {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"me","version":"1"}}}
+→ {"jsonrpc":"2.0","method":"notifications/initialized"}
+→ {"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"batch","arguments":{"commands":[
+     {"command":"sketch.create","params":{"plane":"XY"}},
+     {"command":"sketch.rectangle.two_point","params":{"p0":[0,0],"p1":[40,30]}},
+     {"command":"sketch.finish"},
+     {"command":"solid.extrude","params":{"distance":20}},
+     {"command":"solid.fillet","params":{"edges":[[0,0,10]],"radius":3}},
+     {"command":"sketch.create","params":{"plane":"XY"}},
+     {"command":"sketch.circle.center","params":{"center":[20,15],"radius":5}},
+     {"command":"solid.extrude","params":{"distance":20,"operation":"cut"}}]}}}
+← {"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"{\"ok\": true, \"completed\": 8, \"results\": [...]}"}]}}
+→ {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"measure","arguments":{}}}
+← … "total": {"volume_mm3": 22390.6, …}
+→ {"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"screenshot","arguments":{"view":"iso"}}}
+← {"jsonrpc":"2.0","id":4,"result":{"content":[{"type":"image","mimeType":"image/png","data":"iVBORw0…"},{"type":"text","text":"{\"source\":\"model\",…}"}]}}
+→ {"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"export","arguments":{"path":"/tmp/part.step"}}}
+```
+
+The tests in `crates/mcp/src/tests.rs` run sessions like this (box → fillet → hole, parameters,
+batch rollback, hostile arguments) and check the results only through MCP.
