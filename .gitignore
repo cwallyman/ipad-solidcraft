@@ -1,0 +1,20 @@
+# Local build and device output
+.DS_Store
+__pycache__/
+*.pyc
+*.xcuserstate
+**/xcuserdata/
+ApplePrototype/build*/
+ApplePrototype/*.xcresult/
+ApplePrototype/prebuilt-web-backup/
+ApplePrototype/verification/*
+!ApplePrototype/verification/*.md
+!ApplePrototype/verification/mesh-conversion/
+ApplePrototype/verification/mesh-conversion/*
+!ApplePrototype/verification/mesh-conversion/*.md
+# Keep signing material and local configuration off GitHub
+*.mobileprovision
+*.p12
+*.p8
+.env
+.env.*

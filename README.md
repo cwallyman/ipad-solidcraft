@@ -1,0 +1,48 @@
+# ipad-solidcraft
+
+An installed iPad prototype of [SolidCraft](https://github.com/bherbruck/solidcraft), using a SwiftUI/WKWebView shell and a bundled Rust/WebAssembly CAD engine. Modeling runs locally on the iPad.
+
+## Project layout
+
+- `ApplePrototype/`: Xcode app, Pencil/finger/mouse input bridge, native Files support, build scripts and implementation notes.
+- `upstream-solidcraft/`: the original SolidCraft source and our iPad adaptations, retained as a Git subtree with upstream history.
+
+Open `ApplePrototype/SolidCraftTest.xcodeproj` and select your own signing team to run on an iPad. A current bundled engine is included. Rebuild it after Rust changes:
+
+```sh
+bash ApplePrototype/scripts/build-local-web.sh
+```
+
+The script requires Rust with the `wasm32-unknown-unknown` target, Trunk, and the project's Rust dependencies. Xcode is required to build/install the Apple app. The command-line install helper accepts your connected iPad UDID:
+
+```sh
+bash ApplePrototype/scripts/build-and-install.sh YOUR_IPAD_UDID
+```
+
+## Current iPad behavior
+
+- One finger orbits; two fingers pan and pinch to zoom. Finger gestures also operate interface controls.
+- Pencil hover shows button names. The user confirmed it works on the physical iPad.
+- Select a sketch tool, press and drag with Pencil, then lift to place the next point. Multi-point shapes retain their remaining stages.
+- Pencil taps add or remove individual selections; a tap in empty model space clears all selections. Mouse clicks replace selection; Shift-click adds/removes.
+- Toolbar dropdowns close on a second tap/click. The browser folder toggle has no B overlay.
+- Native Files handles supported imports; large DXFs can be split into editable layer parts. Faceted mesh conversion rebuilds accepted closed mesh shells as separate CAD bodies.
+
+See [the full implementation handoff](ApplePrototype/IPAD_APP_IMPLEMENTATION.md), [app instructions](ApplePrototype/README.md), and [verification results](ApplePrototype/verification/RESULTS.md) for details and limitations. Build/install success does not establish physical validation of every interaction. This is a development prototype, not an App Store release.
+
+## Updating from the original developer
+
+The initial subtree is based on upstream commit `2bb24d1`. The `upstream` remote points to the original SolidCraft project; `origin` points to this repository. Work on an update branch from a clean checkout:
+
+```sh
+git switch -c update-solidcraft
+git subtree pull --prefix=upstream-solidcraft upstream main
+```
+
+Resolve conflicts while preserving the iPad changes, run the checks in `upstream-solidcraft/AGENTS.md`, rebuild the bundled web engine, and validate the installed app's Pencil input, navigation, selection, menus and file handling before merging. Review upstream release and dependency changes; don't assume a conflict-free merge proves runtime compatibility.
+
+Build directories, device test bundles, local verification media/logs, imported drawings, original downloaded bundles, and signing credentials stay local. Committed verification Markdown may reference those local artifacts.
+
+## Licensing
+
+SolidCraft is licensed under MIT OR Apache-2.0; its history, notices, licenses and attribution remain in `upstream-solidcraft/`. The Apple shell additions use the same MIT OR Apache-2.0 choice; see the root license files. Bundled third-party fonts and assets retain their respective licenses and attribution in the app's `Web/` directory. SolidCraft remains an independent project; this repository contains our iPad adaptation.
